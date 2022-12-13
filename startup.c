@@ -1,3 +1,8 @@
+/*
+ * Original info for this file is credited to Jacob Mossberg from his blog post:
+ * https://jacobmossberg.se/posts/2018/08/11/run-c-program-bare-metal-on-arm-cortex-m3.html
+ */
+
 #define STACK_TOP 0x20005000
 
 extern unsigned int _BSS_START;
@@ -9,11 +14,14 @@ extern unsigned int _DATA_RAM_END;
 void startup();
 void main();
 
+// Various memory addresses make unused called in OW firmware that we need to emulate
+void empty_return();
+
 // Define the vector table
-unsigned int * myvectors[2] 
+unsigned int * myvectors[]
 __attribute__ ((section("vectors")))= {
     (unsigned int *)    STACK_TOP,  // stack pointer
-    (unsigned int *)    startup //+ 0x080000000     // code entry point
+    (unsigned int *)    startup, // code entry point
 };
 
 void startup()
@@ -42,9 +50,11 @@ void startup()
         data_rom_start_p++;
     }
 
-    /* Now we are ready to start the main function */
     main();
 
     while (1) { }
 }
 
+void empty_return() {
+    return; // Purposefully do nothing to emulate the stock `bl lr` instruction
+}

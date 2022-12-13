@@ -40,9 +40,5 @@ void main()
     send_bt_cmd(HEADER_KEY_END);
 
     set_lightbar(0, 0, 0); // "Ladies and gentlemen, we got him." (do a lightbar animation here)
-
-    while (1) {
-        // Stall out to prevent continuing into OW firmware
-    }
 }
 
