@@ -1,0 +1,13 @@
+# Build outputs
+firmware.bin
+signed-firmware.bin
+
+# Object files
+*.o
+
+# Debug files
+*.elf
+
+# MacOS directory stuff
+.DS_Store
+*/.DS_Store
