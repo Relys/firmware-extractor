@@ -10,10 +10,10 @@ TODO, probably will link to rewheel.app.
 
 ### Prerequesites
 
-You'll need to have the latest version of the `arm-none-eabi` tools installed to properly build everything. You can install them with:
+You'll need to have the latest version of the `arm-none-eabi` tools installed (to build everything) as well as `openssl` (to sign firmware). You can install them with:
 ```sh
-sudo apt-get install binutils-arm-none-eabi
-sudo apt-get install gcc-arm-none-eabi
+sudo apt-get update
+sudo apt-get install binutils-arm-none-eabi gcc-arm-none-eabi openssl
 ```
 
 ### Clone and build
