@@ -1,4 +1,4 @@
-#define FAKE_STACK_POINTER 0x20005000
+#define FAKE_STACK_POINTER 0x20002450
 
 void startup();
 void main();

@@ -19,7 +19,7 @@ firmware.o: $(FIRMWARE)
 
 # $(KEY) passed in as environment variable to prevent accidental commits (-K only takes direct hex string)
 sign:
-	openssl enc -d -aes-128-ecb -nosalt -nopad -K $(KEY) -in $(OUT) -out $(SIGNED_OUT)
+	openssl enc -aes-128-ecb -nosalt -nopad -K $(KEY) -in $(OUT) -out $(SIGNED_OUT)
 
 clean:
 	rm -rf *.o *.elf $(OUT) $(SIGNED_OUT)
