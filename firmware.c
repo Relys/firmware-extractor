@@ -19,9 +19,10 @@ void main()
 {
     set_lightbar(0xff, 0xbe, 0x00); // Show that we've successfully run the firmware
 
-    while (last_cmd != HEADER_KEY_START) {
-        last_cmd = read_bt_byte();
-    }
+    // Ignore waiting for start header for now
+    //while (last_cmd != HEADER_KEY_START) {
+    //    last_cmd = read_bt_byte();
+    //}
 
     set_lightbar(0xbe, 0x00, 0xff); // Acknowledge that we've received the start header
 
