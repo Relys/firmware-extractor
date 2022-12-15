@@ -21,6 +21,9 @@ firmware.o: $(FIRMWARE)
 sign:
 	openssl enc -aes-128-ecb -nosalt -nopad -K $(KEY) -in $(OUT) -out $(SIGNED_OUT)
 
+flash:
+	st-flash --reset write firmware.bin 0x08003000
+
 clean:
 	rm -rf *.o *.elf $(OUT) $(SIGNED_OUT)
 
