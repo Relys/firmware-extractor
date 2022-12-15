@@ -25,6 +25,20 @@
 unsigned int keys[4];
 unsigned int last_cmd = 0x00;
 
+#if defined (__GNUC__) /*!< GNU Compiler */
+void __attribute__((naked))
+delay_internal(unsigned long ulCount)
+{
+    __asm("    subs    r0, #1\n"
+       "    bne     delay_internal\n"
+       "    bx      lr");
+}
+#endif
+
+void delay(unsigned long ms) {
+    delay_internal(ms * (36000000/3000));
+}
+
 struct uart_config {
     uint32_t baud_rate;
     uint32_t param_1;
@@ -73,11 +87,14 @@ void main()
 
     ota_dma_timer_setup();
     flash_unlock();
+    ota_rcc_clock_enable_something(0x20, 1);
 
-    set_lightbar(0x00FF00);
+    set_lightbar(0xffffff);
+    delay(5000);
+
 
     // set_lightbar(100, 255, 1);
-    ota_rcc_clock_enable_something(0x20, 1);
+    
     
     
 
@@ -98,15 +115,21 @@ void main()
 
     // set_lightbar(0xff, 0x00, 0xbe); // Show that we've unlocked the flash and are going to read
 
-    // for (int i = 0; i < BYTES_TO_READ; i++) {
-    //     memcpy(&keys[i], (unsigned int*)(KEY_LOCATION + (i * sizeof(unsigned int))), sizeof(unsigned int));
-    // }
+    set_lightbar(0x00FF00);
 
-    // for (int i = 0; i < BYTES_TO_READ; i++) {
-    //     send_bt_byte(keys[i]);
-    // }
+    memcpy(&keys, (uint32_t*)(KEY_LOCATION), sizeof(uint32_t) * 4);
+    delay(1000);
 
-    // send_bt_byte(HEADER_KEY_END);
+    set_lightbar(0x0000FF);
+
+    for (int i = 0; i < BYTES_TO_READ; i++) {
+        send_bt_byte(keys[i]);
+    }
+
+    delay(1000);
+
+    send_bt_byte(HEADER_KEY_END);
+    set_lightbar(0xFF0000);
 
     // set_lightbar(0x00, 0xff, 0x00); // "Ladies and gentlemen, we got him." (do a lightbar animation here)
 }
