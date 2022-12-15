@@ -5,15 +5,15 @@
 #define HEADER_KEY_START 0x00
 #define HEADER_KEY_END 0x00
 
-#define flash_unlock   ((uint8_t (*)(void))0x08001091)
-#define set_lightbar    ((void (*)(unsigned int, unsigned int, unsigned int))0x08000c47)
+#define flash_unlock    ((uint8_t (*)(void))0x08001092 + 1)
+#define set_lightbar    ((void (*)(unsigned int, unsigned int, unsigned int))0x08000c46 + 1)
 #define read_bt_byte    ((unsigned int (*)(void))0x00000000)
-#define send_bt_byte    ((void (*)(unsigned int))0x08001194)
+#define send_bt_byte    ((void (*)(unsigned int))0x08001194 + 1)
 
-#define ota_rcc_flash_setup ((void (*)(void))0x08000d05)
-#define ota_dma_timer_setup ((void (*)(void))0x08000d4b)
-#define ota_uart_setup ((void (*)(int, struct uart_config*))0x08000d74)
-#define ota_rcc_clock_enable_something ((void (*)(unsigned int, int))0x08000f2b)
+#define ota_rcc_flash_setup ((void (*)(void))0x08000d04 + 1)
+#define ota_dma_timer_setup ((void (*)(void))0x08000d4a + 1)
+#define ota_uart_setup      ((void (*)(int, struct uart_config*))0x08000d74 + 1)
+#define ota_rcc_clock_enable_something ((void (*)(unsigned int, int))0x08000f2a + 1)
 
 #include <string.h>
 #include <stdint.h>
