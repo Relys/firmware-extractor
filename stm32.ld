@@ -17,17 +17,13 @@ SECTIONS
     .  = 0x20000000;  /* From 0x20000000 */      
 
     _DATA_RAM_START = .;
-    .data : AT(_DATA_ROM_START) 
-    {
-        *(.data)      /* Data memory */
-    }
     _DATA_RAM_END = .;
 
-    _BSS_START = .;   /* Indicates where BSS section starts in RAM */
+    __bss_start__ = .;   /* Indicates where BSS section starts in RAM */
     .bss :
     {
         *(.bss)       /* Zero-filled run time allocate data memory */
     }
-    _BSS_END = .;     /* Indicates where BSS section ends in RAM */
+    __bss_end__ = .;     /* Indicates where BSS section ends in RAM */
 }
 
