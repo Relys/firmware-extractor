@@ -5,32 +5,25 @@
 #define HEADER_KEY_START 0x00
 #define HEADER_KEY_END 0x00
 
-#define flash_unlock    ((uint8_t (*)(void))0x08001092 + 1)
-#define set_lightbar    ((void (*)(unsigned int, unsigned int, unsigned int))0x08000c46 + 1)
-#define invalidate_lightbar    ((void (*)(void))0x08000ab8 + 1)
-#define read_bt_byte    ((unsigned int (*)(void))0x00000000)
-#define send_bt_byte    ((void (*)(unsigned int))0x08001194 + 1)
+// Important addresses
+#define RAM_START ((volatile uint8_t * const) 0x20000000)
+
+// Functions to call
+#define flash_unlock        ((uint8_t (*)(void))0x08001092 + 1)
+#define invalidate_lightbar ((void (*)(void))0x08000ab8 + 1)
+#define send_bt_byte        ((void (*)(unsigned int))0x08001194 + 1)
+#define read_bt_byte        ((unsigned int (*)(void))0x00000000)
 
 #define ota_dma_timer_setup ((void (*)(void))0x08000b4a + 1)
 #define ota_rcc_flash_setup ((uint32_t (*)(void))0x08000d04 + 1)
 #define ota_uart_setup      ((void (*)(int, struct uart_config*))0x08000d74 + 1)
 #define ota_rcc_clock_enable_something ((void (*)(unsigned int, int))0x08000f2a + 1)
 
-#define RAM_START ((volatile uint8_t * const) 0x20000000)
-
 #include <string.h>
 #include <stdint.h>
 
 unsigned int keys[4];
 unsigned int last_cmd = 0x00;
-
-void gpio_reset_pins(unsigned int* address, unsigned int value) {
-    address[4] = value;
-}
-
-void gpio_reset_brr(unsigned int* address, unsigned int value) {
-    address[5] = value;
-}
 
 struct uart_config {
     uint32_t baud_rate;
@@ -40,12 +33,30 @@ struct uart_config {
     uint16_t param_4;
 };
 
-struct grb {
-    uint8_t green;
-    uint8_t red;
-    uint8_t blue;
-};
+void gpio_reset_pins(unsigned int* address, unsigned int value) {
+    address[4] = value;
+}
 
+void gpio_reset_brr(unsigned int* address, unsigned int value) {
+    address[5] = value;
+}
+
+void set_lightbar_index(uint8_t index, uint32_t hex) {
+    uint8_t red   = (hex & 0xff0000) >> 16;
+    uint8_t green = (hex & 0x00ff00) >> 8;
+    uint8_t blue  = (hex & 0x0000ff);
+
+    RAM_START[index * 3] = green;
+    RAM_START[index * 3 + 1] = red;
+    RAM_START[index * 3 + 2] = blue;
+}
+
+void set_lightbar(uint32_t hex) {
+    for (uint8_t i = 0; i < 7; i++)
+        set_lightbar_index(i, hex);
+
+    invalidate_lightbar();
+}
 
 void main()
 {
@@ -63,16 +74,10 @@ void main()
     ota_dma_timer_setup();
     flash_unlock();
 
-    for (int i = 0; i < 7; i++) {
-        RAM_START[i*3] = 0xFF;
-        RAM_START[i*3 + 1] = 0x00;
-        RAM_START[i*3 + 2] = 0x00;
-    }
+    set_lightbar(0x00FF00);
 
-    invalidate_lightbar();
     // set_lightbar(100, 255, 1);
     ota_rcc_clock_enable_something(0x20, 1);
-
     
     
 
