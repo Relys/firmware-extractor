@@ -78,14 +78,82 @@ void gpio_reset_brr(unsigned int* address, unsigned int value) {
     address[5] = value;
 }
 
+union Color {
+    struct rgb {
+        uint8_t r;
+        uint8_t g;
+        uint8_t b;
+    } rgb;
+    uint32_t hex;
+};
+
+uint32_t hsv2rgb(uint8_t h, uint8_t s, uint8_t v) {
+    union Color color;
+    if (s == 0) {
+        color.rgb.r = color.rgb.g = color.rgb.b = v;
+        return color.hex;
+    }
+    const int region = h / 43;
+    const int remainder = (h - (region * 43)) * 6;
+    
+    const int p = (v * (255 - s)) >> 8;
+    const int q = (v * (255 - ((s * remainder) >> 8))) >> 8;
+    const int t = (v * (255 - ((s * (255-remainder)) >> 8))) >> 8;
+
+    switch (region) {
+        case 0: 
+            color.rgb.r = v;
+            color.rgb.g = t;
+            color.rgb.b = p;
+            break;
+        case 1:
+            color.rgb.r = q;
+            color.rgb.g = v;
+            color.rgb.b = p;
+            break;
+        case 2: 
+            color.rgb.r = p;
+            color.rgb.g = v;
+            color.rgb.b = t;
+            break;
+        case 3:
+            color.rgb.r = p;
+            color.rgb.g = q;
+            color.rgb.b = v;
+            break;
+        case 4: 
+            color.rgb.r = t;
+            color.rgb.g = p;
+            color.rgb.b = v;
+            break;
+        case 5:
+            color.rgb.r = v;
+            color.rgb.g = p;
+            color.rgb.b = q;
+            break;
+        default:
+            return color.hex;
+    }
+
+    return color.hex;
+}
+
+uint8_t correct_gamma(uint8_t channel) {
+    int temp;
+    if (channel == 0) return 0;
+    temp = channel * channel * channel * 251;
+    temp >>= 24;
+    return (uint8_t)(4 + temp);
+}
+
 void status_light_set_pixel(uint8_t index, uint32_t hex) {
     uint8_t red   = (hex & 0xff0000) >> 16;
     uint8_t green = (hex & 0x00ff00) >> 8;
     uint8_t blue  = (hex & 0x0000ff);
 
-    RAM_START[index * 3] = green;
-    RAM_START[index * 3 + 1] = red;
-    RAM_START[index * 3 + 2] = blue;
+    RAM_START[index * 3] = correct_gamma(green);
+    RAM_START[index * 3 + 1] = correct_gamma(red);
+    RAM_START[index * 3 + 2] = correct_gamma(blue);
 }
 
 void status_light_set_color(uint32_t hex, uint8_t invalidate) {
@@ -169,14 +237,15 @@ void ble_init_update_mode() {
 }
 
 char wait_for_ble_input() {
-    uint8_t status, flip;
+    uint8_t status;
     uint16_t temp = 0;
+    uint8_t hue = 255;
     do {
-        temp = (temp + 1) % (UINT16_MAX / 2);
-        if (temp == 0) {
-            flip = flip == 1 ? 0 : 1;
+        temp = (temp + 1) % (UINT8_MAX);
+        if (temp == 0) hue++;
+        for (uint8_t i = 0; i < STATUS_LEDS; i++) {
+            status_light_set_pixel(i, hsv2rgb(hue - 30 * i, 255, 255));
         }
-        status_light_set_color(flip ? 0x000000 : 0x000040, 0);
         status_light_invalidate();
         status = usart3_status_bitmask(USART3, 0x20);
     } while (status == 0);
