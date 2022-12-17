@@ -11,3 +11,5 @@ signed-firmware.bin
 # MacOS directory stuff
 .DS_Store
 */.DS_Store
+
+.pio
