@@ -231,8 +231,6 @@ void ble_init_update_mode() {
     ble_send_byte(0xFF);
     ble_send_byte('U');
 
-    status_light_set_color(0x00FFFF, 1);
-
     ble_send_serial_number();
 }
 
@@ -306,7 +304,7 @@ void main()
                 dump(0x08000000, 0x08002fff, 0x004000);
                 break;
             case 'p':
-                dump(0x0800fc00, 0x0800fd00, 0x404000);
+                dump(0x0800fc00, 0x0800fd00, 0x004040);
                 break;
             case 'r':
             default:
