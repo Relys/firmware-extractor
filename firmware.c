@@ -255,7 +255,12 @@ char wait_for_ble_input() {
 
 void dump(uint32_t from, uint32_t to, uint32_t progressColor) {
     uint8_t buffer[20];
-    for (uint32_t i = from; i < to; i += 20) {    
+    uint32_t packetNumber = 0;
+    uint8_t flip = 0;
+    for (uint32_t i = from; i < to; i += 20) {  
+        packetNumber++;
+        if (packetNumber % 10 == 0) flip = flip == 1 ? 0 : 1;
+        status_light_set_color(flip ? 0x000000 : progressColor, 1);
         memcpy(&buffer, (uint8_t*)i, sizeof(uint8_t) * BLE_FRAME_SIZE);
         for (int i = 0; i < BLE_FRAME_SIZE; i++) {
             ble_send_byte(buffer[i]);
@@ -297,13 +302,11 @@ void main()
     while (1) {
         char input = wait_for_ble_input();
         switch (input) {
-            case 'o':                
-                status_light_set_color(0x00FF00, 1);
-                dump(0x08000000, 0x08002fff, 0x00ff00);
+            case 'o':                       
+                dump(0x08000000, 0x08002fff, 0x004000);
                 break;
             case 'p':
-                status_light_set_color(0xFF00FF, 1);
-                dump(0x0800fc00, 0x0800fd00, 0xffff00);
+                dump(0x0800fc00, 0x0800fd00, 0x404000);
                 break;
             case 'r':
             default:
