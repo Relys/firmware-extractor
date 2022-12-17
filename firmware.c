@@ -181,6 +181,8 @@ void main()
     gpio_set_reset_pins((uint32_t*)GPIOD, 0x200);
     flash_unlock();
 
+    // todo: write OTA flag to 0x0800f800
+
     ble_init_update_mode();
     status_light_set_color(0x0000FF);
 
