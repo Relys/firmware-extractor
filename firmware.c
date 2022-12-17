@@ -1,5 +1,6 @@
 #define KEY_LOCATION 0x08000d54
-#define BYTES_TO_READ 16
+#define BLE_FRAME_SIZE 20
+#define STATUS_LEDS 7
 
 // Our custom magic headers to show we're sending the firmware data
 #define HEADER_KEY_START 0x00
@@ -7,6 +8,7 @@
 
 // Important addresses
 #define RAM_START ((volatile uint8_t * const) 0x20000000)
+#define USART3 ((struct usart *) 0x40004800)
 #define GPIOD 0x40011400
 #define PTR_FLASH_SERIAL_NUMBER_0   ((volatile uint8_t * const) 0x20000054)
 #define PTR_FLASH_SERIAL_NUMBER_1   ((volatile uint8_t * const) 0x20000058)
@@ -26,11 +28,10 @@
 #define hal_gpio_init       ((void (*)(uint32_t *, struct gpio_config*))0x08000f9c + 1)
 #define gpio_set_reset_pins ((void (*)(uint32_t *, uint32_t))0x08001066 + 1)
 
+#define usart3_status_bitmask   ((uint8_t (*)(struct usart *usartPointer, uint16_t mask))0x08001274 + 1)
+
 #include <string.h>
 #include <stdint.h>
-
-uint8_t keys[BYTES_TO_READ];
-unsigned int last_cmd = 0x00;
 
 #if defined (__GNUC__) /*!< GNU Compiler */
 void __attribute__((naked))
@@ -45,6 +46,15 @@ delay_internal(unsigned long ulCount)
 void delay(unsigned long ms) {
     delay_internal(ms * (36000000/3000));
 }
+
+struct usart {
+    uint32_t SR;
+    uint32_t DR;
+    uint32_t BRR;
+    uint32_t CR1;
+    uint32_t CR2;
+    uint32_t GTPR;
+};
 
 struct uart_config {
     uint32_t baud_rate;
@@ -78,11 +88,12 @@ void status_light_set_pixel(uint8_t index, uint32_t hex) {
     RAM_START[index * 3 + 2] = blue;
 }
 
-void status_light_set_color(uint32_t hex) {
+void status_light_set_color(uint32_t hex, uint8_t invalidate) {
     for (uint8_t i = 0; i < 7; i++)
         status_light_set_pixel(i, hex);
 
-    status_light_invalidate();
+    if (invalidate)
+        status_light_invalidate();
 }
 
 void ble_send_serial_number() {
@@ -152,9 +163,36 @@ void ble_init_update_mode() {
     ble_send_byte(0xFF);
     ble_send_byte('U');
 
-    status_light_set_color(0x00FFFF);
+    status_light_set_color(0x00FFFF, 1);
 
     ble_send_serial_number();
+}
+
+char wait_for_ble_input() {
+    uint8_t status, flip;
+    uint16_t temp = 0;
+    do {
+        temp = (temp + 1) % (UINT16_MAX / 2);
+        if (temp == 0) {
+            flip = flip == 1 ? 0 : 1;
+        }
+        status_light_set_color(flip ? 0x000000 : 0x000040, 0);
+        status_light_invalidate();
+        status = usart3_status_bitmask(USART3, 0x20);
+    } while (status == 0);
+    char input = (char)USART3->DR;
+    return input; // data register from USART3
+}
+
+void dump(uint32_t from, uint32_t to, uint32_t progressColor) {
+    uint8_t buffer[20];
+    for (uint32_t i = from; i < to; i += 20) {    
+        memcpy(&buffer, (uint8_t*)i, sizeof(uint8_t) * BLE_FRAME_SIZE);
+        for (int i = 0; i < BLE_FRAME_SIZE; i++) {
+            ble_send_byte(buffer[i]);
+        }
+        delay(50);
+    }
 }
 
 void main()
@@ -184,35 +222,26 @@ void main()
     // todo: write OTA flag to 0x0800f800
 
     ble_init_update_mode();
-    status_light_set_color(0x0000FF);
 
-    delay(200);
-
-    // // Ignore waiting for start header for now
-    // //while (last_cmd != HEADER_KEY_START) {
-    // //    last_cmd = read_bt_byte();
-    // //}
-
-    // set_lightbar(0xbe, 0x00, 0xff); // Acknowledge that we've received the start header
-
-    // set_lightbar(0xff, 0x00, 0xbe); // Show that we've unlocked the flash and are going to read
-
-    // set_lightbar(0x00FF00);
-
-    memcpy(&keys, (uint8_t*)(KEY_LOCATION), sizeof(uint8_t) * BYTES_TO_READ);
-    // delay(1000);
-
-    // set_lightbar(0x0000FF);
-
-    for (int i = 0; i < BYTES_TO_READ; i++) {
-        ble_send_byte(keys[i]);
+    uint32_t temp = 0;
+    uint8_t flip = 0;
+    while (1) {
+        char input = wait_for_ble_input();
+        switch (input) {
+            case 'o':                
+                status_light_set_color(0x00FF00, 1);
+                dump(0x08000000, 0x08002fff, 0x00ff00);
+                break;
+            case 'p':
+                status_light_set_color(0xFF00FF, 1);
+                dump(0x0800fc00, 0x0800fd00, 0xffff00);
+                break;
+            case 'r':
+            default:
+                status_light_set_color(0xFF0000, 1);
+                // todo: reboot into ota mode
+                break;
+        }
     }
-
-    // delay(1000);
-
-    // ble_send_byte(HEADER_KEY_END);
-    status_light_set_color(0xFF0000);
-
-    // set_lightbar(0x00, 0xff, 0x00); // "Ladies and gentlemen, we got him." (do a lightbar animation here)
 }
 
