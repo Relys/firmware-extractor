@@ -295,8 +295,6 @@ void main()
 
     ble_init_update_mode();
 
-    uint32_t temp = 0;
-    uint8_t flip = 0;
     while (1) {
         char input = wait_for_ble_input();
         switch (input) {
