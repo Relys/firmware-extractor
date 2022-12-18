@@ -41,6 +41,8 @@ jobs:
     - name: Sign release
       if: startsWith(github.ref, 'refs/tags/')
       run: |
+        python3 pad.py .pio/build/xr/firmware/bin
+        python3 pad.py .pio/build/pint/firmware/bin
         openssl enc -aes-128-ecb -nosalt -nopad -K $ENCRYPTION_KEY -in .pio/build/xr/firmware.bin -out xr-signed-extractor.bin
         openssl enc -aes-128-ecb -nosalt -nopad -K $ENCRYPTION_KEY -in .pio/build/pint/firmware.bin -out pint-signed-extractor.bin
         env:
