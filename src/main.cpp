@@ -29,49 +29,49 @@ uint32_t flash_read(uint32_t address) {
   return *(uint32_t*)address;
 }
 
-// void ble_send_serial_number() {
-//   uint32_t serial_number = flash_read(FLASH_SERIAL_NUMBER_PART);
-//   uint32_t serial_number_part_1 = flash_read(FLASH_SERIAL_NUMBER_SCALAR);
-//   uint8_t temp, temp1, temp2;
-//   uint8_t sn_digit_0, sn_digit_1, sn_digit_2, sn_digit_3, sn_digit_4, sn_digit_5;
+void ble_send_serial_number() {
+  uint32_t serial_number = flash_read(FLASH_SERIAL_NUMBER_PART);
+  uint32_t serial_number_part_1 = flash_read(FLASH_SERIAL_NUMBER_SCALAR);
+  uint8_t temp, temp1, temp2;
+  uint8_t sn_digit_0, sn_digit_1, sn_digit_2, sn_digit_3, sn_digit_4, sn_digit_5;
 
-//   if (serial_number != 0xffff || serial_number_part_1 != 0xffff) {
-//     if (serial_number_part_1 != 0xfff) {
-//       serial_number = serial_number + serial_number_part_1 * 0x10000;
-//       OWSerial.print("One");
-//       OWSerial.print(0);
-//       OWSerial.print(0x20);
-//       temp = serial_number >> 0x18;
-//       OWSerial.print(temp);
-//       temp1 = serial_number >> 0x10;
-//       OWSerial.print(temp1);
-//       OWSerial.print(temp ^ temp1 ^ 100);
-//     }
-//     OWSerial.print("One");
-//     OWSerial.print(1);
-//     temp2 = serial_number >> 8;
-//     OWSerial.print(temp2);
-//     OWSerial.print((uint8_t)serial_number);
-//     OWSerial.print((uint8_t)serial_number ^ temp2 ^ 0x45);
-//     OWSerial.print("One");
-//     OWSerial.print(1);
-//     OWSerial.print(0);
-//     OWSerial.print("ow");
-//     sn_digit_0 = (uint8_t)(((serial_number / 100000)) % 10) + 0x30;
-//     sn_digit_1 = (uint8_t)(((serial_number / 10000)) % 10) + 0x30;
-//     sn_digit_2 = (uint8_t)(((serial_number / 1000)) % 10) + 0x30;
-//     sn_digit_3 = (uint8_t)(((serial_number / 100)) % 10) + 0x30;
-//     sn_digit_4 = (uint8_t)(((serial_number / 10)) % 10) + 0x30;
-//     sn_digit_5 = (uint8_t)(((serial_number % 10))) + 0x30;
-//     OWSerial.print(sn_digit_0);
-//     OWSerial.print(sn_digit_1);
-//     OWSerial.print(sn_digit_2);
-//     OWSerial.print(sn_digit_3);
-//     OWSerial.print(sn_digit_4);
-//     OWSerial.print(sn_digit_5);
-//     OWSerial.print(sn_digit_5 ^ sn_digit_0 ^ 0x5d ^ sn_digit_1 ^ sn_digit_2 ^ sn_digit_3 ^ sn_digit_4);
-//   }
-// }
+  if (serial_number != 0xffff || serial_number_part_1 != 0xffff) {
+    if (serial_number_part_1 != 0xfff) {
+      serial_number = serial_number + serial_number_part_1 * 0x10000;
+      OWSerial.print("One");
+      OWSerial.print(0);
+      OWSerial.print(0x20);
+      temp = serial_number >> 0x18;
+      OWSerial.print(temp);
+      temp1 = serial_number >> 0x10;
+      OWSerial.print(temp1);
+      OWSerial.print(temp ^ temp1 ^ 100);
+    }
+    OWSerial.print("One");
+    OWSerial.print(1);
+    temp2 = serial_number >> 8;
+    OWSerial.print(temp2);
+    OWSerial.print((uint8_t)serial_number);
+    OWSerial.print((uint8_t)serial_number ^ temp2 ^ 0x45);
+    OWSerial.print("One");
+    OWSerial.print(1);
+    OWSerial.print(0);
+    OWSerial.print("ow");
+    sn_digit_0 = (uint8_t)(((serial_number / 100000)) % 10) + 0x30;
+    sn_digit_1 = (uint8_t)(((serial_number / 10000)) % 10) + 0x30;
+    sn_digit_2 = (uint8_t)(((serial_number / 1000)) % 10) + 0x30;
+    sn_digit_3 = (uint8_t)(((serial_number / 100)) % 10) + 0x30;
+    sn_digit_4 = (uint8_t)(((serial_number / 10)) % 10) + 0x30;
+    sn_digit_5 = (uint8_t)(((serial_number % 10))) + 0x30;
+    OWSerial.print(sn_digit_0);
+    OWSerial.print(sn_digit_1);
+    OWSerial.print(sn_digit_2);
+    OWSerial.print(sn_digit_3);
+    OWSerial.print(sn_digit_4);
+    OWSerial.print(sn_digit_5);
+    OWSerial.print(sn_digit_5 ^ sn_digit_0 ^ 0x5d ^ sn_digit_1 ^ sn_digit_2 ^ sn_digit_3 ^ sn_digit_4);
+  }
+}
 
 void setup_bluetooth() {
   OWSerial.begin(115200);
@@ -87,7 +87,7 @@ void setup_bluetooth() {
   OWSerial.print(0xFF);
   OWSerial.print('U');
 
-  // ble_send_serial_number();
+  ble_send_serial_number();
 }
 
 void dump(uint32_t from, uint32_t to) {
@@ -106,7 +106,7 @@ void dump(uint32_t from, uint32_t to) {
 }
 
 void setup() {  
-  mark_ota_reboot();
+  // mark_ota_reboot();
   setup_bluetooth();
 }
 
