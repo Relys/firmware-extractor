@@ -117,6 +117,9 @@ void loop() {
       case 's':
         dump(SETTINGS_START, SETTINGS_END, 0x004040);
       break;
+      case 'r':
+        NVIC_SystemReset();
+      break;
       // default:
         // show error command light
     }
