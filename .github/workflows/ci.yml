@@ -39,13 +39,13 @@ jobs:
         pwd
         ls -l
         pio run -e xr
-        python3 pad.py .pio/build/xr/firmware/bin
+        python3 pad.py .pio/build/xr/firmware.bin
     - name: Build Pint firmware
       run: |
         pwd
         ls -l
         pio run -e pint
-        python3 pad.py .pio/build/pint/firmware/bin
+        python3 pad.py .pio/build/pint/firmware.bin
     - name: Sign release
       # if: startsWith(github.ref, 'refs/tags/')
       run: |
