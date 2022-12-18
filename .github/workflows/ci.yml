@@ -1,0 +1,51 @@
+name: PlatformIO CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Cache PlatformIO
+      uses: actions/cache@v2
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+    - name: Set up Python
+      uses: actions/setup-python@v2
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+    - name: Run PlatformIO
+      run: pio run -e xr -e pint
+    - name: Sign release
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        openssl enc -aes-128-ecb -nosalt -nopad -K $ENCRYPTION_KEY -in .pio/build/xr/firmware.bin -out xr-signed-extractor.bin
+        openssl enc -aes-128-ecb -nosalt -nopad -K $ENCRYPTION_KEY -in .pio/build/pint/firmware.bin -out pint-signed-extractor.bin
+        env:
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+    - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            xr-signed-extractor.bin
+            pint-signed-extractor.bin
