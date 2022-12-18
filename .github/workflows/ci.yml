@@ -41,7 +41,7 @@ jobs:
         openssl enc -aes-128-ecb -nosalt -nopad -K $ENCRYPTION_KEY -in .pio/build/xr/firmware.bin -out xr-signed-extractor.bin
         openssl enc -aes-128-ecb -nosalt -nopad -K $ENCRYPTION_KEY -in .pio/build/pint/firmware.bin -out pint-signed-extractor.bin
         env:
-          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          ENCRYPTION_KEY: ${{ secrets.SIGNING_KEY }}
     - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
