@@ -13,3 +13,4 @@ signed-firmware.bin
 */.DS_Store
 
 .pio
+.vscode
