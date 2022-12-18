@@ -33,8 +33,10 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install --upgrade platformio
-    - name: Run PlatformIO
-      run: pio run -e xr -e pint
+    - name: Build XR firmware
+      run: pio run -e xr
+    - name: Build Pint firmware
+      run: pio run -e pint
     - name: Sign release
       if: startsWith(github.ref, 'refs/tags/')
       run: |
