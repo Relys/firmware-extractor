@@ -10,7 +10,6 @@
             "includePath": [
                 "/home/racekit/projects/ow-firmware-extractor/include",
                 "/home/racekit/projects/ow-firmware-extractor/src",
-                "/home/racekit/projects/ow-firmware-extractor/.pio/libdeps/pint/FlashStorage_STM32/src",
                 "/home/racekit/.platformio/packages/framework-arduinoststm32/cores/arduino/avr",
                 "/home/racekit/.platformio/packages/framework-arduinoststm32/cores/arduino/stm32",
                 "/home/racekit/.platformio/packages/framework-arduinoststm32/cores/arduino/stm32/LL",
@@ -34,6 +33,7 @@
                 "/home/racekit/.platformio/packages/framework-cmsis/CMSIS/DSP/PrivateInclude",
                 "/home/racekit/.platformio/packages/framework-arduinoststm32/cores/arduino",
                 "/home/racekit/.platformio/packages/framework-arduinoststm32/variants/STM32F1xx/F103R(8-B)T",
+                "/home/racekit/projects/ow-firmware-extractor/.pio/libdeps/pint/FlashStorage_STM32/src",
                 "/home/racekit/.platformio/packages/framework-arduinoststm32/libraries/CMSIS_DSP/src",
                 "/home/racekit/.platformio/packages/framework-arduinoststm32/libraries/EEPROM/src",
                 "/home/racekit/.platformio/packages/framework-arduinoststm32/libraries/IWatchdog/src",
@@ -52,7 +52,6 @@
                 "path": [
                     "/home/racekit/projects/ow-firmware-extractor/include",
                     "/home/racekit/projects/ow-firmware-extractor/src",
-                    "/home/racekit/projects/ow-firmware-extractor/.pio/libdeps/pint/FlashStorage_STM32/src",
                     "/home/racekit/.platformio/packages/framework-arduinoststm32/cores/arduino/avr",
                     "/home/racekit/.platformio/packages/framework-arduinoststm32/cores/arduino/stm32",
                     "/home/racekit/.platformio/packages/framework-arduinoststm32/cores/arduino/stm32/LL",
@@ -76,6 +75,7 @@
                     "/home/racekit/.platformio/packages/framework-cmsis/CMSIS/DSP/PrivateInclude",
                     "/home/racekit/.platformio/packages/framework-arduinoststm32/cores/arduino",
                     "/home/racekit/.platformio/packages/framework-arduinoststm32/variants/STM32F1xx/F103R(8-B)T",
+                    "/home/racekit/projects/ow-firmware-extractor/.pio/libdeps/pint/FlashStorage_STM32/src",
                     "/home/racekit/.platformio/packages/framework-arduinoststm32/libraries/CMSIS_DSP/src",
                     "/home/racekit/.platformio/packages/framework-arduinoststm32/libraries/EEPROM/src",
                     "/home/racekit/.platformio/packages/framework-arduinoststm32/libraries/IWatchdog/src",
