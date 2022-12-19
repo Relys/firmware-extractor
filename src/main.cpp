@@ -1,14 +1,17 @@
 #include <Arduino.h>
-
-#define FLASH_SERIAL_NUMBER_PART    0x0800FC0A
-#define FLASH_SERIAL_NUMBER_SCALAR  0x0800FC30
+#include <stdint.h>
+#include <string.h>
 
 #define BLE_FRAME_SIZE 20
 
+#define OTA_FLAG_ADDRESS            0x0800F800
 #define BOOTLOADER_START            0x08000000
 #define BOOTLOADER_END              0x08003000
 #define SETTINGS_START              0x0800FC00
 #define SETTINGS_END                0x0800FD00
+
+#define FLASH_SERIAL_NUMBER_PART    0x0800FC0A
+#define FLASH_SERIAL_NUMBER_SCALAR  0x0800FC30
 
 #if ONEWHEEL_TYPE == XR
 HardwareSerial OWSerial(USART1);
@@ -16,13 +19,11 @@ HardwareSerial OWSerial(USART1);
 HardwareSerial OWSerial(USART3);
 #endif
 
-/*
-  Tells the Onewheel to reboot back into OTA mode on the next boot
-*/
+// Tells the Onewheel to reboot into OTA mode on the next boot
 void mark_ota_reboot() {
   HAL_FLASH_Unlock();
   __HAL_FLASH_CLEAR_FLAG(0x35);
-  HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, 0x0800f800, 0x80a0);
+  HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, OTA_FLAG_ADDRESS, 0x80a0);
 }
 
 uint32_t flash_read(uint32_t address) {
@@ -76,7 +77,8 @@ void ble_send_serial_number() {
 void setup_bluetooth() {
   OWSerial.begin(115200);
 
-  for (int i = 0; i < 2400000; i++) {__asm("nop");}
+  for (int i = 0; i < 2400000; i++)
+    __asm("nop");
   
   for (uint8_t i = 0; i < 8; i++)
     OWSerial.print(0);
@@ -90,14 +92,12 @@ void setup_bluetooth() {
   ble_send_serial_number();
 }
 
+// Dumps the contents of the flash memory to the serial port
 void dump(uint32_t from, uint32_t to) {
-  uint8_t buffer[20];
-  uint32_t packetNumber = 0;
-  uint8_t flip = 0;
-  float progress = 0;
-  for (uint32_t i = from; i < to; i += 20) {  
-    progress = (float)(i - from) / (float)(to - from);
-    // status_light_set_color(flip ? 0x000000 : progressColor, 1);
+  uint8_t buffer[BLE_FRAME_SIZE];
+  //float progress = 0;
+  for (uint32_t i = from; i < to; i += BLE_FRAME_SIZE) {
+    //progress = (float)(i - from) / (float)(to - from);
     memcpy(&buffer, (uint8_t*)i, sizeof(uint8_t) * BLE_FRAME_SIZE);
     for (int i = 0; i < BLE_FRAME_SIZE; i++)
       OWSerial.print(buffer[i]);
@@ -106,11 +106,9 @@ void dump(uint32_t from, uint32_t to) {
 }
 
 void setup() {  
-  // mark_ota_reboot();
+  mark_ota_reboot();
   setup_bluetooth();
 }
-
-uint8_t hue = 255;
 
 void loop() {
   if (OWSerial.available()) {
@@ -130,3 +128,4 @@ void loop() {
     }
   }
 }
+
