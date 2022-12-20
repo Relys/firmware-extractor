@@ -107,6 +107,7 @@ void dump(uint32_t from, uint32_t to) {
 void setup() {  
   HAL_FLASH_Unlock();
   __HAL_FLASH_CLEAR_FLAG(0x35);
+  mark_ota_reboot();
   setup_bluetooth();
 }
 
@@ -121,7 +122,6 @@ void loop() {
         dump(SETTINGS_START, SETTINGS_END);
       break;
       case 'r':
-        mark_ota_reboot();
         NVIC_SystemReset();
       break;
       // default:
