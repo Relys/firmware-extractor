@@ -13,6 +13,9 @@
 #define FLASH_SERIAL_NUMBER_PART    0x0800FC0A
 #define FLASH_SERIAL_NUMBER_SCALAR  0x0800FC30
 
+#define XR 1
+#define PINT 2
+
 #if ONEWHEEL_TYPE == XR
 HardwareSerial OWSerial(USART1);
 #else
