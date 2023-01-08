@@ -39,23 +39,23 @@ void ble_send_serial_number() {
     if (serial_number_part_1 != 0xfff) {
       serial_number = serial_number + serial_number_part_1 * 0x10000;
       OWSerial.print("One");
-      OWSerial.print(0);
-      OWSerial.print(0x20);
+      OWSerial.print(0, HEX);
+      OWSerial.print(0x20, HEX);
       temp = serial_number >> 0x18;
-      OWSerial.print(temp);
+      OWSerial.print(temp, HEX);
       temp1 = serial_number >> 0x10;
-      OWSerial.print(temp1);
-      OWSerial.print(temp ^ temp1 ^ 100);
+      OWSerial.print(temp1, HEX);
+      OWSerial.print(temp ^ temp1 ^ 100, HEX);
     }
     OWSerial.print("One");
-    OWSerial.print(1);
+    OWSerial.print(1, HEX);
     temp2 = serial_number >> 8;
-    OWSerial.print(temp2);
-    OWSerial.print((uint8_t)serial_number);
-    OWSerial.print((uint8_t)serial_number ^ temp2 ^ 0x45);
+    OWSerial.print(temp2, HEX);
+    OWSerial.print((uint8_t)serial_number, HEX);
+    OWSerial.print((uint8_t)serial_number ^ temp2 ^ 0x45, HEX);
     OWSerial.print("One");
-    OWSerial.print(1);
-    OWSerial.print(0);
+    OWSerial.print(1, HEX);
+    OWSerial.print(0, HEX);
     OWSerial.print("ow");
     sn_digit_0 = (uint8_t)(((serial_number / 100000)) % 10) + 0x30;
     sn_digit_1 = (uint8_t)(((serial_number / 10000)) % 10) + 0x30;
@@ -63,13 +63,13 @@ void ble_send_serial_number() {
     sn_digit_3 = (uint8_t)(((serial_number / 100)) % 10) + 0x30;
     sn_digit_4 = (uint8_t)(((serial_number / 10)) % 10) + 0x30;
     sn_digit_5 = (uint8_t)(((serial_number % 10))) + 0x30;
-    OWSerial.print(sn_digit_0);
-    OWSerial.print(sn_digit_1);
-    OWSerial.print(sn_digit_2);
-    OWSerial.print(sn_digit_3);
-    OWSerial.print(sn_digit_4);
-    OWSerial.print(sn_digit_5);
-    OWSerial.print(sn_digit_5 ^ sn_digit_0 ^ 0x5d ^ sn_digit_1 ^ sn_digit_2 ^ sn_digit_3 ^ sn_digit_4);
+    OWSerial.print(sn_digit_0, HEX);
+    OWSerial.print(sn_digit_1, HEX);
+    OWSerial.print(sn_digit_2, HEX);
+    OWSerial.print(sn_digit_3, HEX);
+    OWSerial.print(sn_digit_4, HEX);
+    OWSerial.print(sn_digit_5, HEX);
+    OWSerial.print(sn_digit_5 ^ sn_digit_0 ^ 0x5d ^ sn_digit_1 ^ sn_digit_2 ^ sn_digit_3 ^ sn_digit_4, HEX);
   }
 }
 
@@ -80,12 +80,12 @@ void setup_bluetooth() {
     __asm("nop");
   
   for (uint8_t i = 0; i < 8; i++)
-    OWSerial.print(0);
+    OWSerial.print(0, HEX);
 
   OWSerial.print("One ");
-  OWSerial.print(0x11);
-  OWSerial.print(0xFF);
-  OWSerial.print(0xFF);
+  OWSerial.print(0x11, HEX);
+  OWSerial.print(0xFF, HEX);
+  OWSerial.print(0xFF, HEX);
   OWSerial.print('U');
 
   ble_send_serial_number();
@@ -93,21 +93,30 @@ void setup_bluetooth() {
 
 // Dumps the contents of the flash memory to the serial port
 void dump(uint32_t from, uint32_t to) {
-  uint8_t buffer[BLE_FRAME_SIZE];
-  //float progress = 0;
-  for (uint32_t i = from; i < to; i += BLE_FRAME_SIZE) {
+  size_t left = to - from;
+  uint8_t buffer[BLE_FRAME_SIZE];  
+  size_t frameSize;
+  for (uint32_t i = from; i <= to; i += BLE_FRAME_SIZE) {
+    left = to - i;
+    frameSize = left < BLE_FRAME_SIZE ? left : BLE_FRAME_SIZE;
+
     //progress = (float)(i - from) / (float)(to - from);
-    memcpy(&buffer, (uint8_t*)i, sizeof(uint8_t) * BLE_FRAME_SIZE);
-    for (int i = 0; i < BLE_FRAME_SIZE; i++)
-      OWSerial.print(buffer[i]);
+    memcpy(&buffer, (uint8_t*)i, sizeof(uint8_t) * frameSize);
+    for (int i = 0; i < frameSize; i++)
+      OWSerial.write(buffer[i]);
     delay(50);
   }
+
+  // fill up the frame on the last packet
+  if (frameSize < BLE_FRAME_SIZE)
+    for (int i = 0; i < BLE_FRAME_SIZE - left; i++)
+      OWSerial.write(0xFF);
 }
 
 void setup() {  
   HAL_FLASH_Unlock();
   __HAL_FLASH_CLEAR_FLAG(0x35);
-  mark_ota_reboot();
+  // mark_ota_reboot();
   setup_bluetooth();
 }
 
@@ -121,6 +130,9 @@ void loop() {
       case 's':
         dump(SETTINGS_START, SETTINGS_END);
       break;
+      case 'k':
+        dump(0x08000d54, 0x08000d64);
+        break;
       case 'r':
         NVIC_SystemReset();
       break;
@@ -129,4 +141,3 @@ void loop() {
     }
   }
 }
-
