@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <stdint.h>
+#include <string.h>
 
 #define BLE_FRAME_SIZE 20
 
@@ -22,6 +24,8 @@ HardwareSerial OWSerial(USART3);
 
 // Tells the Onewheel to reboot into OTA mode on the next boot
 void mark_ota_reboot() {
+  HAL_FLASH_Unlock();
+  __HAL_FLASH_CLEAR_FLAG(0x35);
   HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, OTA_FLAG_ADDRESS, 0x80a0);
 }
 
@@ -114,9 +118,7 @@ void dump(uint32_t from, uint32_t to) {
 }
 
 void setup() {  
-  HAL_FLASH_Unlock();
-  __HAL_FLASH_CLEAR_FLAG(0x35);
-  // mark_ota_reboot();
+  mark_ota_reboot();
   setup_bluetooth();
 }
 
