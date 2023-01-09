@@ -22,6 +22,27 @@ HardwareSerial OWSerial(USART1);
 HardwareSerial OWSerial(USART3);
 #endif
 
+#if ONEWHEEL_TYPE == PINT
+extern "C" {
+#include "ws2812_led.h"
+void GPIO_PortB_Output_Init();
+}
+
+#define LEDS 7
+#define BUFFER_PER_PIXEL 4
+#define FRAMEBUFFER_SIZE LEDS * BUFFER_PER_PIXEL
+
+struct pixel {
+  uint8_t g;
+  uint8_t r;
+  uint8_t b;
+  uint8_t w;
+};
+
+struct pixel framebuffer[FRAMEBUFFER_SIZE];
+struct led_channel_info channels[1];
+#endif
+
 // Tells the Onewheel to reboot into OTA mode on the next boot
 void mark_ota_reboot() {
   HAL_FLASH_Unlock();
@@ -106,19 +127,48 @@ void dump(uint32_t from, uint32_t to) {
 
     //progress = (float)(i - from) / (float)(to - from);
     memcpy(&buffer, (uint8_t*)i, sizeof(uint8_t) * frameSize);
-    for (int i = 0; i < frameSize; i++)
-      OWSerial.write(buffer[i]);
-    delay(50);
+    for (size_t j = 0; j < frameSize; j++)
+      OWSerial.write(buffer[j]);
+    delay(100);
   }
 
   // fill up the frame on the last packet
-  if (frameSize < BLE_FRAME_SIZE)
+  if (frameSize < BLE_FRAME_SIZE && left < BLE_FRAME_SIZE)
     for (int i = 0; i < BLE_FRAME_SIZE - left; i++)
       OWSerial.write(0xFF);
+
+  OWSerial.flush();
 }
 
-void setup() {  
-  mark_ota_reboot();
+#if ONEWHEEL_TYPE == PINT
+void set_color(led_channel_info *channel, pixel color) { 
+  auto framebuffer = channel->framebuffer;
+  for (int i = 0; i < LEDS; i++) {
+    memcpy((void*)&framebuffer[i * BUFFER_PER_PIXEL], &color, sizeof(pixel));
+  }
+}
+
+pixel white { .g = 0, .r = 0, .b = 0, .w = 0xFF };
+pixel red { .g = 0, .r = 0xFF, .b = 0, .w = 0 };
+#endif
+
+void setup() {
+#if ONEWHEEL_TYPE == PINT
+  GPIO_PortB_Output_Init();
+
+  __enable_irq();
+  channels[0].framebuffer = (const uint8_t*) framebuffer;
+  channels[0].length = LEDS * sizeof(struct pixel);
+
+  // doesn't work properly just yet. timing needs to be adjusted I think
+  // but works enough
+  set_color(&channels[0], red);
+  ws2812_init();
+#endif
+  
+  HAL_FLASH_Unlock();
+  __HAL_FLASH_CLEAR_FLAG(0x35);
+  // mark_ota_reboot();
   setup_bluetooth();
 }
 
@@ -142,4 +192,10 @@ void loop() {
         // show error command light
     }
   }
+
+#if ONEWHEEL_TYPE == PINT
+  __disable_irq();
+  ws2812_refresh(channels, GPIOB);
+  __enable_irq();
+#endif
 }
