@@ -168,7 +168,7 @@ void setup() {
   
   HAL_FLASH_Unlock();
   __HAL_FLASH_CLEAR_FLAG(0x35);
-  // mark_ota_reboot();
+  mark_ota_reboot();
   setup_bluetooth();
 }
 
