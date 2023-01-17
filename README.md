@@ -8,9 +8,9 @@ This firmware is pre-compiled and available to use in [rewheel.app](https://rewh
 
 ## Build instructions
 
-### Prerequesites
+### Prerequisites
 
-You'll need to have the latest version of Python installed. Afterwards, you can use `pip` to install `PlatformIO` which is used to build the project.
+- PlatformIO - You can install via VS Code as an extension (recommended) or install via Python Pip. For the latter, You'll need to have the latest version of Python installed. Afterwards, you can use `pip` to install `PlatformIO` which is used to build the project.
 ```sh
 pip3 install platformio
 ```
