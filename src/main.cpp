@@ -4,17 +4,27 @@
 
 #define BLE_FRAME_SIZE 20
 
-#define OTA_FLAG_ADDRESS            0x0800F800
-#define BOOTLOADER_START            0x08000000
-#define BOOTLOADER_END              0x08003000
-#define SETTINGS_START              0x0800FC00
-#define SETTINGS_END                0x0800FD00
+#define LEGACY_OTA_FLAG_ADDRESS            0x0800F800
+#define LEGACY_BOOTLOADER_START            0x08000000
+#define LEGACY_BOOTLOADER_END              0x08003000
+#define LEGACY_SETTINGS_START              0x0800FC00
+#define LEGACY_SETTINGS_END                0x0800FD00
+#define LEGACY_FLASH_SERIAL_NUMBER_PART    0x0800FC0A
+#define LEGACY_FLASH_SERIAL_NUMBER_SCALAR  0x0800FC30
 
-#define FLASH_SERIAL_NUMBER_PART    0x0800FC0A
-#define FLASH_SERIAL_NUMBER_SCALAR  0x0800FC30
+#define GT_OTA_FLAG_ADDRESS                0x00000000
+#define GT_BOOTLOADER_SETTINGS_START       0x00008000
+#define GT_BOOTLOADER_SETTINGS_END         0x00008500
+#define GT_SERIAL_NUMBER_START             0x00010000
+#define GT_SERIAL_NUMBER_END               0x0001000F
+#define GT_FLASH_SERIAL_NUMBER_PART        0x08000000
+#define GT_FLASH_SERIAL_NUMBER_SCALAR      0x08000000
 
 #define XR 1
 #define PINT 2
+#define GT 3
+
+#define ONEWHEEL_TYPE GT
 
 #if ONEWHEEL_TYPE == XR
 HardwareSerial OWSerial(USART1);
@@ -43,6 +53,22 @@ struct pixel framebuffer[FRAMEBUFFER_SIZE];
 struct led_channel_info channels[1];
 #endif
 
+#if ONEWHEEL_TYPE == XR || ONEWHEEL_TYPE == PINT
+#define OTA_FLAG_ADDRESS            LEGACY_OTA_FLAG_ADDRESS
+#define STAGE_ONE_START             LEGACY_BOOTLOADER_START
+#define STAGE_TWO_END               LEGACY_BOOTLOADER_END
+#define STAGE_TWO_START             LEGACY_SETTINGS_START
+#define STAGE_TWO_END               LEGACY_SETTINGS_END
+#define FLASH_SERIAL_NUMBER_PART    LEGACY_FLASH_SERIAL_NUMBER_PART
+#define FLASH_SERIAL_NUMBER_SCALAR  LEGACY_FLASH_SERIAL_NUMBER_SCALAR
+#elif ONEWHEEL_TYPE == GT
+#define OTA_FLAG_ADDRESS            GT_OTA_FLAG_ADDRESS
+#define STAGE_ONE_START             GT_BOOTLOADER_SETTINGS_START
+#define STAGE_ONE_END               GT_BOOTLOADER_SETTINGS_END
+#define STAGE_TWO_START             GT_SERIAL_NUMBER_START
+#define STAGE_TWO_END               GT_SERIAL_NUMBER_END
+#endif
+
 // Tells the Onewheel to reboot into OTA mode on the next boot
 void mark_ota_reboot() {
   HAL_FLASH_Unlock();
@@ -52,6 +78,25 @@ void mark_ota_reboot() {
 
 uint32_t flash_read(uint32_t address) {
   return *(uint32_t*)address;
+}
+
+#if ONEWHEEL_TYPE == XR || ONEWHEEL_TYPE == PINT
+void setup_bluetooth() {
+  OWSerial.begin(115200);
+
+  for (int i = 0; i < 2400000; i++)
+    __asm("nop");
+  
+  for (uint8_t i = 0; i < 8; i++)
+    OWSerial.print(0, HEX);
+
+  OWSerial.print("One ");
+  OWSerial.print(0x11, HEX);
+  OWSerial.print(0xFF, HEX);
+  OWSerial.print(0xFF, HEX);
+  OWSerial.print('U');
+
+  ble_send_serial_number();
 }
 
 void ble_send_serial_number() {
@@ -98,23 +143,105 @@ void ble_send_serial_number() {
   }
 }
 
+#elif ONEWHEEL_TYPE == GT
 void setup_bluetooth() {
   OWSerial.begin(115200);
 
   for (int i = 0; i < 2400000; i++)
     __asm("nop");
-  
-  for (uint8_t i = 0; i < 8; i++)
-    OWSerial.print(0, HEX);
 
-  OWSerial.print("One ");
-  OWSerial.print(0x11, HEX);
-  OWSerial.print(0xFF, HEX);
-  OWSerial.print(0xFF, HEX);
-  OWSerial.print('U');
+  // todo: add GT BLE initialization
 
   ble_send_serial_number();
 }
+
+void ble_send_serial_number() {
+  uint32_t serial_number = flash_read(STAGE_TWO_START + 2);
+  uint32_t other_memory_address = flash_read(0x20001560);
+  uint32_t other_memory_address_2 = flash_read(0x20000020);
+  uint32_t temp, temp2, temp3;
+  uint8_t temp4;
+  uint8_t digit_0, digit_1, digit_2, digit_3, digit_4, digit_5;
+  // ota_set_status_light(100,0xff,1);
+  HAL_FLASH_Unlock();
+  OWSerial.print(0);
+  OWSerial.print(0);
+  OWSerial.print(0);
+  OWSerial.print(0);
+  OWSerial.print(0);
+  OWSerial.print(0);
+  OWSerial.print(0);
+  OWSerial.print(0);
+  OWSerial.print('O');
+  OWSerial.print('n');
+  OWSerial.print('e');
+  OWSerial.print(0);
+  OWSerial.print(1);
+  temp = other_memory_address;
+  OWSerial.print((uint32_t)(temp >> 8));
+  temp2 = other_memory_address;
+  OWSerial.print((uint32_t)(byte)temp2);
+  OWSerial.print(((uint32_t)temp2 ^ temp >> 8 ^ 0x45) & 0xff);
+  OWSerial.print('O');
+  OWSerial.print('n');
+  OWSerial.print('e');
+  OWSerial.print(0);
+  OWSerial.print(' ');
+  temp = serial_number;
+  OWSerial.print((uint32_t)(temp >> 8));
+  temp2 = serial_number;
+  OWSerial.print((uint32_t)(byte)temp2);
+  OWSerial.print(((uint32_t)temp2 ^ temp >> 8 ^ 100) & 0xff);
+  temp = other_memory_address;
+  temp2 = serial_number;
+  if ((uint32_t)temp2 + (uint32_t)temp != 0) {
+    OWSerial.print('O');
+    OWSerial.print('n');
+    OWSerial.print('e');
+    OWSerial.print(1);
+    OWSerial.print(0);
+    OWSerial.print('o');
+    OWSerial.print('w');
+    temp2 = serial_number;
+    temp = other_memory_address;
+    digit_0 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 100000) % 10 + 0x30;
+    OWSerial.print(digit_0);
+    temp2 = serial_number;
+    temp = other_memory_address;
+    digit_1 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 10000) % 10 + 0x30;
+    OWSerial.print(digit_1);
+    temp2 = serial_number;
+    temp = other_memory_address;
+    digit_2 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 1000) % 10 + 0x30;
+    OWSerial.print(digit_2);
+    temp2 = serial_number;
+    temp = other_memory_address;
+    digit_3 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 100) % 10 + 0x30;
+    OWSerial.print(digit_3);
+    temp2 = serial_number;
+    temp = other_memory_address;
+    digit_4 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 10) % 10 + 0x30;
+    OWSerial.print(digit_4);
+    temp2 = serial_number;
+    temp = other_memory_address;
+    digit_5 = (uint32_t)temp2 * 0x10000 + (uint32_t)temp;
+    digit_5 = digit_5 % 10 + 0x30;
+    OWSerial.print(digit_5);
+    OWSerial.print(digit_5 ^ digit_0 ^ 0x5d ^ digit_1 ^ digit_2 ^ digit_3 ^ digit_4);
+  }
+  OWSerial.print('O');
+  OWSerial.print('n');
+  OWSerial.print('e');
+  OWSerial.print(0);
+  OWSerial.print(24);
+  temp = other_memory_address_2;
+  OWSerial.print((uint32_t)temp * 1000 >> 8 & 0xff);
+  temp3 = other_memory_address_2;
+  temp4 = (char)temp3 * -0x18;
+  OWSerial.print((uint32_t)temp4);
+  OWSerial.print((uint32_t)(byte)(temp4 ^ (byte)((uint32_t)temp * 1000 >> 8) ^ 0x5c));
+}
+#endif
 
 // Dumps the contents of the flash memory to the serial port
 void dump(uint32_t from, uint32_t to) {
@@ -177,14 +304,11 @@ void loop() {
     char command = OWSerial.read();
     switch (command) {
       case 'b':
-        dump(BOOTLOADER_START, BOOTLOADER_END);
+        dump(STAGE_ONE_START, STAGE_ONE_END);
       break;
       case 's':
-        dump(SETTINGS_START, SETTINGS_END);
+        dump(STAGE_TWO_START, STAGE_TWO_END);
       break;
-      case 'k':
-        dump(0x08000d54, 0x08000d64);
-        break;
       case 'r':
         NVIC_SystemReset();
       break;
