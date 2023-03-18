@@ -1,30 +1,7 @@
 #include <Arduino.h>
 #include <stdint.h>
 #include <string.h>
-
-#define BLE_FRAME_SIZE 20
-
-#define LEGACY_OTA_FLAG_ADDRESS            0x0800F800
-#define LEGACY_BOOTLOADER_START            0x08000000
-#define LEGACY_BOOTLOADER_END              0x08003000
-#define LEGACY_SETTINGS_START              0x0800FC00
-#define LEGACY_SETTINGS_END                0x0800FD00
-#define LEGACY_FLASH_SERIAL_NUMBER_PART    0x0800FC0A
-#define LEGACY_FLASH_SERIAL_NUMBER_SCALAR  0x0800FC30
-
-#define GT_OTA_FLAG_ADDRESS                0x00000000
-#define GT_BOOTLOADER_SETTINGS_START       0x00008000
-#define GT_BOOTLOADER_SETTINGS_END         0x00008500
-#define GT_SERIAL_NUMBER_START             0x00010000
-#define GT_SERIAL_NUMBER_END               0x0001000F
-#define GT_FLASH_SERIAL_NUMBER_PART        0x08000000
-#define GT_FLASH_SERIAL_NUMBER_SCALAR      0x08000000
-
-#define XR 1
-#define PINT 2
-#define GT 3
-
-#define ONEWHEEL_TYPE GT
+#include "common.h"
 
 #if ONEWHEEL_TYPE == XR
 HardwareSerial OWSerial(USART1);
@@ -62,7 +39,6 @@ struct led_channel_info channels[1];
 #define FLASH_SERIAL_NUMBER_PART    LEGACY_FLASH_SERIAL_NUMBER_PART
 #define FLASH_SERIAL_NUMBER_SCALAR  LEGACY_FLASH_SERIAL_NUMBER_SCALAR
 #elif ONEWHEEL_TYPE == GT
-#define OTA_FLAG_ADDRESS            GT_OTA_FLAG_ADDRESS
 #define STAGE_ONE_START             GT_BOOTLOADER_SETTINGS_START
 #define STAGE_ONE_END               GT_BOOTLOADER_SETTINGS_END
 #define STAGE_TWO_START             GT_SERIAL_NUMBER_START
@@ -70,11 +46,23 @@ struct led_channel_info channels[1];
 #endif
 
 // Tells the Onewheel to reboot into OTA mode on the next boot
+#if ONEWHEEL_TYPE != GT
 void mark_ota_reboot() {
   HAL_FLASH_Unlock();
   __HAL_FLASH_CLEAR_FLAG(0x35);
   HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, OTA_FLAG_ADDRESS, 0x80a0);
 }
+#else
+void mark_ota_reboot() {
+  HAL_FLASH_Unlock();
+  __HAL_FLASH_CLEAR_FLAG(0x35);
+  // update ota flash address
+
+  uint16_t *ota_flag_address;
+  storage_search(StorageKeys::BootMode, &ota_flag_address);
+  HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, (uint32_t)ota_flag_address, 0x80a0);
+}
+#endif
 
 uint32_t flash_read(uint32_t address) {
   return *(uint32_t*)address;
@@ -172,9 +160,7 @@ void ble_send_serial_number() {
   OWSerial.print(0);
   OWSerial.print(0);
   OWSerial.print(0);
-  OWSerial.print('O');
-  OWSerial.print('n');
-  OWSerial.print('e');
+  OWSerial.print("One");
   OWSerial.print(0);
   OWSerial.print(1);
   temp = other_memory_address;
@@ -182,9 +168,7 @@ void ble_send_serial_number() {
   temp2 = other_memory_address;
   OWSerial.print((uint32_t)(byte)temp2);
   OWSerial.print(((uint32_t)temp2 ^ temp >> 8 ^ 0x45) & 0xff);
-  OWSerial.print('O');
-  OWSerial.print('n');
-  OWSerial.print('e');
+  OWSerial.print("One");
   OWSerial.print(0);
   OWSerial.print(' ');
   temp = serial_number;
@@ -195,13 +179,10 @@ void ble_send_serial_number() {
   temp = other_memory_address;
   temp2 = serial_number;
   if ((uint32_t)temp2 + (uint32_t)temp != 0) {
-    OWSerial.print('O');
-    OWSerial.print('n');
-    OWSerial.print('e');
+    OWSerial.print("One");
     OWSerial.print(1);
     OWSerial.print(0);
-    OWSerial.print('o');
-    OWSerial.print('w');
+    OWSerial.print("ow");
     temp2 = serial_number;
     temp = other_memory_address;
     digit_0 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 100000) % 10 + 0x30;
@@ -229,9 +210,7 @@ void ble_send_serial_number() {
     OWSerial.print(digit_5);
     OWSerial.print(digit_5 ^ digit_0 ^ 0x5d ^ digit_1 ^ digit_2 ^ digit_3 ^ digit_4);
   }
-  OWSerial.print('O');
-  OWSerial.print('n');
-  OWSerial.print('e');
+  OWSerial.print("One");
   OWSerial.print(0);
   OWSerial.print(24);
   temp = other_memory_address_2;
@@ -293,10 +272,10 @@ void setup() {
   ws2812_init();
 #endif
   
-  HAL_FLASH_Unlock();
-  __HAL_FLASH_CLEAR_FLAG(0x35);
+  // HAL_FLASH_Unlock();
+  // __HAL_FLASH_CLEAR_FLAG(0x35);
   mark_ota_reboot();
-  setup_bluetooth();
+  // setup_bluetooth();
 }
 
 void loop() {
@@ -322,4 +301,18 @@ void loop() {
   ws2812_refresh(channels, GPIOB);
   __enable_irq();
 #endif
+}
+
+uint16_t storage_search(uint32_t search_value, uint16_t **found_pointer) {
+  uint16_t *search_address = (uint16_t*)0x0800BFFE;
+
+  for (; search_address > (uint16_t*)0x08008003; search_address -= 2) {
+    if (*search_address == search_value) {
+      *found_pointer = search_address - 1;
+
+      return 1;
+    }
+  }
+
+  return 0;
 }
