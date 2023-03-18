@@ -60,7 +60,7 @@ void mark_ota_reboot() {
 
   uint16_t *ota_flag_address;
   storage_search(StorageKeys::BootMode, &ota_flag_address);
-  HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, (uint32_t)ota_flag_address, 0x80a0);
+  HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, (uint32_t)ota_flag_address, 0xffff);
 }
 #endif
 
@@ -135,7 +135,7 @@ void ble_send_serial_number() {
 void setup_bluetooth() {
   OWSerial.begin(115200);
 
-  ble_send_serial_number();
+  // ble_send_serial_number();
 }
 
 void ble_send_serial_number() {
