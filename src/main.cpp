@@ -135,11 +135,6 @@ void ble_send_serial_number() {
 void setup_bluetooth() {
   OWSerial.begin(115200);
 
-  for (int i = 0; i < 2400000; i++)
-    __asm("nop");
-
-  // todo: add GT BLE initialization
-
   ble_send_serial_number();
 }
 
@@ -275,7 +270,7 @@ void setup() {
   // HAL_FLASH_Unlock();
   // __HAL_FLASH_CLEAR_FLAG(0x35);
   mark_ota_reboot();
-  // setup_bluetooth();
+  setup_bluetooth();
 }
 
 void loop() {
