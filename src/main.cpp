@@ -57,10 +57,17 @@ void mark_ota_reboot() {
   HAL_FLASH_Unlock();
   __HAL_FLASH_CLEAR_FLAG(0x35);
   // update ota flash address
+  
+  uint16_t *last_storage_address;
+  find_storage_end(&last_storage_address);
 
-  uint16_t *ota_flag_address;
-  storage_search(StorageKeys::BootMode, &ota_flag_address);
-  HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, (uint32_t)ota_flag_address, 0xffff);
+  // Append to the end of the storage and write that we're in OTA mode
+  HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, (uint32_t)last_storage_address, 0x80a0);
+  HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, (uint32_t)last_storage_address + 2, StorageKeys::BootMode);
+
+//   uint16_t *ota_flag_address;
+//   storage_search(StorageKeys::BootMode, &ota_flag_address);
+//   HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, (uint32_t)ota_flag_address, 0xffff);
 }
 #endif
 
@@ -267,7 +274,7 @@ void setup() {
   ws2812_init();
 #endif
   
-  // HAL_FLASH_Unlock();
+  // HAL_kLASH_Unlock();
   // __HAL_FLASH_CLEAR_FLAG(0x35);
   mark_ota_reboot();
   setup_bluetooth();
@@ -304,6 +311,20 @@ uint16_t storage_search(uint32_t search_value, uint16_t **found_pointer) {
   for (; search_address > (uint16_t*)0x08008003; search_address -= 2) {
     if (*search_address == search_value) {
       *found_pointer = search_address - 1;
+
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+uint16_t find_storage_end(uint16_t **found_pointer) {
+  uint16_t *search_address = (uint16_t*)0x0800BFFE;
+
+  for (; search_address > (uint16_t*)0x08008003; search_address -= 2) {
+    if (*search_address != 0xFFFF) {
+      *found_pointer = search_address + 1;
 
       return 1;
     }
