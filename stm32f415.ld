@@ -30,7 +30,7 @@
 */
 
 /* Highest address of the user mode stack */
-_estack = 0x20020000;    /* end of 128K RAM on AHB bus*/
+_estack = 0x2000F000;    /* end of 128K RAM on AHB bus*/
 
 /* Generate a link error if heap and stack don't fit into RAM */
 _Min_Heap_Size = 0;      /* required amount of heap  */
