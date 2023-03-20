@@ -3,6 +3,9 @@
 #include <string.h>
 #include "common.h"
 
+#define USART3_SR 0x40004800
+#define USART3_DR 0x40004804
+
 #if ONEWHEEL_TYPE == XR
 HardwareSerial OWSerial(USART1);
 #else
@@ -284,15 +287,16 @@ void setup() {
   ws2812_init();
 #endif
   
-  // HAL_kLASH_Unlock();
-  // __HAL_FLASH_CLEAR_FLAG(0x35);
-  mark_ota_reboot();
+  HAL_FLASH_Unlock();  
+  __HAL_FLASH_CLEAR_FLAG(0x35);
+  // mark_ota_reboot();
   setup_bluetooth();
 }
 
 void loop() {
-  if (OWSerial.available()) {
-    char command = OWSerial.read();
+  uint32_t temp = *(uint32_t*)USART3_SR;
+  if ((int)(temp << 26) < 0) {
+    char command = *(uint32_t*)USART3_DR & 0xff;
     switch (command) {
       case 'b':
         dump(STAGE_ONE_START, STAGE_ONE_END);
