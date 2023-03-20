@@ -146,9 +146,19 @@ void setup_bluetooth() {
 }
 
 void ble_send_serial_number() {
-  uint32_t serial_number = flash_read(STAGE_TWO_START + 2);
-  uint32_t other_memory_address = *(uint32_t*)0x20001560;
-  uint32_t other_memory_address_2 = *(uint32_t*)0x20000020;
+  uint16_t* hardware_revision_ptr;
+  storage_search(StorageKeys::HardwareRevision, &hardware_revision_ptr);
+
+  uint16_t* serial_number_ptr;
+  storage_search(StorageKeys::SerialNumber1, &serial_number_ptr);
+
+  uint16_t* serial_number2_ptr;
+  storage_search(StorageKeys::SerialNumber2, &serial_number2_ptr);
+
+  uint16_t hardware_revision = *hardware_revision_ptr;
+  uint16_t serial_number = *serial_number_ptr;
+  uint16_t serial_number_2 = *serial_number2_ptr;
+
   uint32_t temp, temp2, temp3;
   uint8_t temp4;
   uint8_t digit_0, digit_1, digit_2, digit_3, digit_4, digit_5;
@@ -165,9 +175,9 @@ void ble_send_serial_number() {
   OWSerial.print("One");
   OWSerial.print(0);
   OWSerial.print(1);
-  temp = other_memory_address;
+  temp = serial_number_2;
   OWSerial.print((uint32_t)(temp >> 8));
-  temp2 = other_memory_address;
+  temp2 = serial_number_2;
   OWSerial.print((uint32_t)(byte)temp2);
   OWSerial.print(((uint32_t)temp2 ^ temp >> 8 ^ 0x45) & 0xff);
   OWSerial.print("One");
@@ -178,7 +188,7 @@ void ble_send_serial_number() {
   temp2 = serial_number;
   OWSerial.print((uint32_t)(byte)temp2);
   OWSerial.print(((uint32_t)temp2 ^ temp >> 8 ^ 100) & 0xff);
-  temp = other_memory_address;
+  temp = serial_number_2;
   temp2 = serial_number;
   if ((uint32_t)temp2 + (uint32_t)temp != 0) {
     OWSerial.print("One");
@@ -186,27 +196,27 @@ void ble_send_serial_number() {
     OWSerial.print(0);
     OWSerial.print("ow");
     temp2 = serial_number;
-    temp = other_memory_address;
+    temp = serial_number_2;
     digit_0 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 100000) % 10 + 0x30;
     OWSerial.print(digit_0);
     temp2 = serial_number;
-    temp = other_memory_address;
+    temp = serial_number_2;
     digit_1 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 10000) % 10 + 0x30;
     OWSerial.print(digit_1);
     temp2 = serial_number;
-    temp = other_memory_address;
+    temp = serial_number_2;
     digit_2 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 1000) % 10 + 0x30;
     OWSerial.print(digit_2);
     temp2 = serial_number;
-    temp = other_memory_address;
+    temp = serial_number_2;
     digit_3 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 100) % 10 + 0x30;
     OWSerial.print(digit_3);
     temp2 = serial_number;
-    temp = other_memory_address;
+    temp = serial_number_2;
     digit_4 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 10) % 10 + 0x30;
     OWSerial.print(digit_4);
     temp2 = serial_number;
-    temp = other_memory_address;
+    temp = serial_number_2;
     digit_5 = (uint32_t)temp2 * 0x10000 + (uint32_t)temp;
     digit_5 = digit_5 % 10 + 0x30;
     OWSerial.print(digit_5);
@@ -215,9 +225,9 @@ void ble_send_serial_number() {
   OWSerial.print("One");
   OWSerial.print(0);
   OWSerial.print(24);
-  temp = other_memory_address_2;
+  temp = hardware_revision;
   OWSerial.print((uint32_t)temp * 1000 >> 8 & 0xff);
-  temp3 = other_memory_address_2;
+  temp3 = hardware_revision;
   temp4 = (char)temp3 * -0x18;
   OWSerial.print((uint32_t)temp4);
   OWSerial.print((uint32_t)(byte)(temp4 ^ (byte)((uint32_t)temp * 1000 >> 8) ^ 0x5c));
