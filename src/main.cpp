@@ -135,13 +135,13 @@ void ble_send_serial_number() {
 void setup_bluetooth() {
   OWSerial.begin(115200);
 
-  // ble_send_serial_number();
+  ble_send_serial_number();
 }
 
 void ble_send_serial_number() {
   uint32_t serial_number = flash_read(STAGE_TWO_START + 2);
-  uint32_t other_memory_address = flash_read(0x20001560);
-  uint32_t other_memory_address_2 = flash_read(0x20000020);
+  uint32_t other_memory_address = *(uint32_t*)0x20001560;
+  uint32_t other_memory_address_2 = *(uint32_t*)0x20000020;
   uint32_t temp, temp2, temp3;
   uint8_t temp4;
   uint8_t digit_0, digit_1, digit_2, digit_3, digit_4, digit_5;
