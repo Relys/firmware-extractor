@@ -141,6 +141,7 @@ void ble_send_serial_number() {
 #elif ONEWHEEL_TYPE == GT
 void setup_bluetooth() {
   OWSerial.begin(115200);
+  delay(250);
 
   ble_send_serial_number();
 }
