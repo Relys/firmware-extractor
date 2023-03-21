@@ -1,5 +1,8 @@
 #pragma once
 
+#define GT_USART3_SR 0x40004800
+#define GT_USART3_DR 0x40004804
+
 #define XR 1
 #define PINT 2
 #define GT 3
@@ -34,6 +37,8 @@ uint32_t flash_read(uint32_t address);
 uint16_t storage_search(uint32_t search_value, uint16_t **found_pointer);
 uint16_t find_storage_end(uint16_t **found_pointer);
 
+bool ble_available();
+char ble_read_byte();
 void mark_ota_reboot();
 void setup_bluetooth();
 void ble_send_serial_number();

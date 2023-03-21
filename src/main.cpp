@@ -3,9 +3,6 @@
 #include <string.h>
 #include "common.h"
 
-#define USART3_SR 0x40004800
-#define USART3_DR 0x40004804
-
 #if ONEWHEEL_TYPE == XR
 HardwareSerial OWSerial(USART1);
 #else
@@ -294,9 +291,8 @@ void setup() {
 }
 
 void loop() {
-  uint32_t temp = *(uint32_t*)USART3_SR;
-  if ((int)(temp << 26) < 0) {
-    char command = *(uint32_t*)USART3_DR & 0xff;
+  if (ble_available()) {
+    char command = ble_read_byte();
     switch (command) {
       case 'b':
         dump(STAGE_ONE_START, STAGE_ONE_END);
@@ -345,4 +341,13 @@ uint16_t find_storage_end(uint16_t **found_pointer) {
   }
 
   return 0;
+}
+
+bool ble_available() {
+  uint32_t temp = *(uint32_t*)GT_USART3_SR;
+  return (int)(temp << 26) < 0;
+}
+
+char ble_read_byte() {
+  return *(uint32_t*)GT_USART3_DR & 0xff;
 }
