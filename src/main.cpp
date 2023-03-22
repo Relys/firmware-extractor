@@ -52,6 +52,10 @@ void mark_ota_reboot() {
   __HAL_FLASH_CLEAR_FLAG(0x35);
   HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, OTA_FLAG_ADDRESS, 0x80a0);
 }
+#define ble_send OWSerial.print
+#define FRAME_DELAY 250
+#else
+#define FRAME_DELAY 50
 #else
 void mark_ota_reboot() {
   HAL_FLASH_Unlock();
@@ -257,7 +261,7 @@ void dump(uint32_t from, uint32_t to) {
     memcpy(&buffer, (uint8_t*)i, sizeof(uint8_t) * frameSize);
     for (size_t j = 0; j < frameSize; j++)
       ble_send(buffer[j]);
-    delay(50);
+    delay(FRAME_DELAY);
   }
 
   // fill up the frame on the last packet
@@ -294,7 +298,7 @@ void setup() {
   
   HAL_FLASH_Unlock();  
   __HAL_FLASH_CLEAR_FLAG(0x35);
-  // mark_ota_reboot();
+  mark_ota_reboot();
   setup_bluetooth();
 }
 
