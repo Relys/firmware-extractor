@@ -83,13 +83,13 @@ void setup_bluetooth() {
     __asm("nop");
   
   for (uint8_t i = 0; i < 8; i++)
-    OWSerial.print(0, HEX);
+    ble_send(0, HEX);
 
-  OWSerial.print("One ");
-  OWSerial.print(0x11, HEX);
-  OWSerial.print(0xFF, HEX);
-  OWSerial.print(0xFF, HEX);
-  OWSerial.print('U');
+  ble_send("One ");
+  ble_send(0x11, HEX);
+  ble_send(0xFF, HEX);
+  ble_send(0xFF, HEX);
+  ble_send('U');
 
   ble_send_serial_number();
 }
@@ -103,45 +103,45 @@ void ble_send_serial_number() {
   if (serial_number != 0xffff || serial_number_part_1 != 0xffff) {
     if (serial_number_part_1 != 0xfff) {
       serial_number = serial_number + serial_number_part_1 * 0x10000;
-      OWSerial.print("One");
-      OWSerial.print(0, HEX);
-      OWSerial.print(0x20, HEX);
+      ble_send("One");
+      ble_send(0, HEX);
+      ble_send(0x20, HEX);
       temp = serial_number >> 0x18;
-      OWSerial.print(temp, HEX);
+      ble_send(temp, HEX);
       temp1 = serial_number >> 0x10;
-      OWSerial.print(temp1, HEX);
-      OWSerial.print(temp ^ temp1 ^ 100, HEX);
+      ble_send(temp1, HEX);
+      ble_send(temp ^ temp1 ^ 100, HEX);
     }
-    OWSerial.print("One");
-    OWSerial.print(1, HEX);
+    ble_send("One");
+    ble_send(1, HEX);
     temp2 = serial_number >> 8;
-    OWSerial.print(temp2, HEX);
-    OWSerial.print((uint8_t)serial_number, HEX);
-    OWSerial.print((uint8_t)serial_number ^ temp2 ^ 0x45, HEX);
-    OWSerial.print("One");
-    OWSerial.print(1, HEX);
-    OWSerial.print(0, HEX);
-    OWSerial.print("ow");
+    ble_send(temp2, HEX);
+    ble_send((uint8_t)serial_number, HEX);
+    ble_send((uint8_t)serial_number ^ temp2 ^ 0x45, HEX);
+    ble_send("One");
+    ble_send(1, HEX);
+    ble_send(0, HEX);
+    ble_send("ow");
     sn_digit_0 = (uint8_t)(((serial_number / 100000)) % 10) + 0x30;
     sn_digit_1 = (uint8_t)(((serial_number / 10000)) % 10) + 0x30;
     sn_digit_2 = (uint8_t)(((serial_number / 1000)) % 10) + 0x30;
     sn_digit_3 = (uint8_t)(((serial_number / 100)) % 10) + 0x30;
     sn_digit_4 = (uint8_t)(((serial_number / 10)) % 10) + 0x30;
     sn_digit_5 = (uint8_t)(((serial_number % 10))) + 0x30;
-    OWSerial.print(sn_digit_0, HEX);
-    OWSerial.print(sn_digit_1, HEX);
-    OWSerial.print(sn_digit_2, HEX);
-    OWSerial.print(sn_digit_3, HEX);
-    OWSerial.print(sn_digit_4, HEX);
-    OWSerial.print(sn_digit_5, HEX);
-    OWSerial.print(sn_digit_5 ^ sn_digit_0 ^ 0x5d ^ sn_digit_1 ^ sn_digit_2 ^ sn_digit_3 ^ sn_digit_4, HEX);
+    ble_send(sn_digit_0, HEX);
+    ble_send(sn_digit_1, HEX);
+    ble_send(sn_digit_2, HEX);
+    ble_send(sn_digit_3, HEX);
+    ble_send(sn_digit_4, HEX);
+    ble_send(sn_digit_5, HEX);
+    ble_send(sn_digit_5 ^ sn_digit_0 ^ 0x5d ^ sn_digit_1 ^ sn_digit_2 ^ sn_digit_3 ^ sn_digit_4, HEX);
   }
 }
 
 #elif ONEWHEEL_TYPE == GT
 void setup_bluetooth() {
-  OWSerial.begin(115200);
-  delay(250);
+  // OWSerial.begin(115200);
+  delay(50);
 
   ble_send_serial_number();
 }
@@ -165,73 +165,82 @@ void ble_send_serial_number() {
   uint8_t digit_0, digit_1, digit_2, digit_3, digit_4, digit_5;
   // ota_set_status_light(100,0xff,1);
   HAL_FLASH_Unlock();
-  OWSerial.print(0);
-  OWSerial.print(0);
-  OWSerial.print(0);
-  OWSerial.print(0);
-  OWSerial.print(0);
-  OWSerial.print(0);
-  OWSerial.print(0);
-  OWSerial.print(0);
-  OWSerial.print("One");
-  OWSerial.print(0);
-  OWSerial.print(1);
+  ble_send(0);
+  ble_send(0);
+  ble_send(0);
+  ble_send(0);
+  ble_send(0);
+  ble_send(0);
+  ble_send(0);
+  ble_send(0);
+  ble_send('O');
+  ble_send('n');
+  ble_send('e');
+  ble_send(0);
+  ble_send(1);
   temp = serial_number_2;
-  OWSerial.print((uint32_t)(temp >> 8));
+  ble_send((uint32_t)(temp >> 8));
   temp2 = serial_number_2;
-  OWSerial.print((uint32_t)(byte)temp2);
-  OWSerial.print(((uint32_t)temp2 ^ temp >> 8 ^ 0x45) & 0xff);
-  OWSerial.print("One");
-  OWSerial.print(0);
-  OWSerial.print(' ');
+  ble_send((uint32_t)(byte)temp2);
+  ble_send(((uint32_t)temp2 ^ temp >> 8 ^ 0x45) & 0xff);
+  ble_send('O');
+  ble_send('n');
+  ble_send('e');
+  ble_send(0);
+  ble_send(' ');
   temp = serial_number;
-  OWSerial.print((uint32_t)(temp >> 8));
+  ble_send((uint32_t)(temp >> 8));
   temp2 = serial_number;
-  OWSerial.print((uint32_t)(byte)temp2);
-  OWSerial.print(((uint32_t)temp2 ^ temp >> 8 ^ 100) & 0xff);
+  ble_send((uint32_t)(byte)temp2);
+  ble_send(((uint32_t)temp2 ^ temp >> 8 ^ 100) & 0xff);
   temp = serial_number_2;
   temp2 = serial_number;
   if ((uint32_t)temp2 + (uint32_t)temp != 0) {
-    OWSerial.print("One");
-    OWSerial.print(1);
-    OWSerial.print(0);
-    OWSerial.print("ow");
+    ble_send('O');
+    ble_send('n');
+    ble_send('e');
+    ble_send(1);
+    ble_send(0);
+    ble_send('o');
+    ble_send('w');
     temp2 = serial_number;
     temp = serial_number_2;
     digit_0 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 100000) % 10 + 0x30;
-    OWSerial.print(digit_0);
+    ble_send(digit_0);
     temp2 = serial_number;
     temp = serial_number_2;
     digit_1 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 10000) % 10 + 0x30;
-    OWSerial.print(digit_1);
+    ble_send(digit_1);
     temp2 = serial_number;
     temp = serial_number_2;
     digit_2 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 1000) % 10 + 0x30;
-    OWSerial.print(digit_2);
+    ble_send(digit_2);
     temp2 = serial_number;
     temp = serial_number_2;
     digit_3 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 100) % 10 + 0x30;
-    OWSerial.print(digit_3);
+    ble_send(digit_3);
     temp2 = serial_number;
     temp = serial_number_2;
     digit_4 = (((uint32_t)temp2 * 0x10000 + (uint32_t)temp) / 10) % 10 + 0x30;
-    OWSerial.print(digit_4);
+    ble_send(digit_4);
     temp2 = serial_number;
     temp = serial_number_2;
     digit_5 = (uint32_t)temp2 * 0x10000 + (uint32_t)temp;
     digit_5 = digit_5 % 10 + 0x30;
-    OWSerial.print(digit_5);
-    OWSerial.print(digit_5 ^ digit_0 ^ 0x5d ^ digit_1 ^ digit_2 ^ digit_3 ^ digit_4);
+    ble_send(digit_5);
+    ble_send(digit_5 ^ digit_0 ^ 0x5d ^ digit_1 ^ digit_2 ^ digit_3 ^ digit_4);
   }
-  OWSerial.print("One");
-  OWSerial.print(0);
-  OWSerial.print(24);
+  ble_send('O');
+  ble_send('n');
+  ble_send('e');
+  ble_send(0);
+  ble_send(24);
   temp = hardware_revision;
-  OWSerial.print((uint32_t)temp * 1000 >> 8 & 0xff);
+  ble_send((uint32_t)temp * 1000 >> 8 & 0xff);
   temp3 = hardware_revision;
   temp4 = (char)temp3 * -0x18;
-  OWSerial.print((uint32_t)temp4);
-  OWSerial.print((uint32_t)(byte)(temp4 ^ (byte)((uint32_t)temp * 1000 >> 8) ^ 0x5c));
+  ble_send((uint32_t)temp4);
+  ble_send((uint32_t)(byte)(temp4 ^ (byte)((uint32_t)temp * 1000 >> 8) ^ 0x5c));
 }
 #endif
 
@@ -247,16 +256,14 @@ void dump(uint32_t from, uint32_t to) {
     //progress = (float)(i - from) / (float)(to - from);
     memcpy(&buffer, (uint8_t*)i, sizeof(uint8_t) * frameSize);
     for (size_t j = 0; j < frameSize; j++)
-      OWSerial.write(buffer[j]);
-    delay(100);
+      ble_send(buffer[j]);
+    delay(50);
   }
 
   // fill up the frame on the last packet
   if (frameSize < BLE_FRAME_SIZE && left < BLE_FRAME_SIZE)
     for (int i = 0; i < BLE_FRAME_SIZE - left; i++)
-      OWSerial.write(0xFF);
-
-  OWSerial.flush();
+      ble_send(0xFF);
 }
 
 #if ONEWHEEL_TYPE == PINT
@@ -344,6 +351,8 @@ uint16_t find_storage_end(uint16_t **found_pointer) {
   return 0;
 }
 
+
+
 bool ble_available() {
   uint32_t temp = *(uint32_t*)GT_USART3_SR;
   return (int)(temp << 26) < 0;
@@ -351,4 +360,15 @@ bool ble_available() {
 
 char ble_read_byte() {
   return *(uint32_t*)GT_USART3_DR & 0xff;
+}
+
+void ble_send(uint32_t data) {
+  uint32_t temp;
+  do {
+    temp = *(uint32_t*)GT_USART3_SR;
+  } while (-1 < (int)(temp << 0x18));
+  *(uint32_t*)GT_USART3_DR = (uint32_t)data;
+  do {
+    temp = *(uint32_t*)GT_USART3_SR;
+  } while (-1 < (int)(temp << 0x18));
 }

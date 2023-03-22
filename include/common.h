@@ -19,8 +19,8 @@
 #define LEGACY_FLASH_SERIAL_NUMBER_PART    0x0800FC0A
 #define LEGACY_FLASH_SERIAL_NUMBER_SCALAR  0x0800FC30
 
-#define GT_BOOTLOADER_SETTINGS_START       0x08008000
-#define GT_BOOTLOADER_SETTINGS_END         0x08008500
+#define GT_BOOTLOADER_SETTINGS_START       0x08000000
+#define GT_BOOTLOADER_SETTINGS_END         0x0800C000
 #define GT_SERIAL_NUMBER_START             0x08010000
 #define GT_SERIAL_NUMBER_END               0x0801000F
 #define GT_FLASH_SERIAL_NUMBER_PART        0x08000000
@@ -39,6 +39,7 @@ uint16_t find_storage_end(uint16_t **found_pointer);
 
 bool ble_available();
 char ble_read_byte();
+void ble_send(uint32_t data);
 void mark_ota_reboot();
 void setup_bluetooth();
 void ble_send_serial_number();
