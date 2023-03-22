@@ -18,10 +18,10 @@
 //  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-
+#include "common.h"
 #include <string.h>
 #include "ws2812_led.h"
-
+#if ONEWHEEL_TYPE == PINT
 TIM_HandleTypeDef htimer2;
 DMA_HandleTypeDef hdma_tim2_update;
 DMA_HandleTypeDef hdma_tim2_pwm_ch1;
@@ -35,10 +35,10 @@ static uint16_t ws2812_gpio_set_bits = 0;
 static uint16_t dma_buffer[DMA_BUFFER_SIZE];
 
 /*
- * Convenience array for GPIO setup code.
- * DO NOT MODIFY THIS DIRECTLY - you will break things
- * Modify the definitions in the header file instead.
- */
+* Convenience array for GPIO setup code.
+* DO NOT MODIFY THIS DIRECTLY - you will break things
+* Modify the definitions in the header file instead.
+*/
 const static uint8_t ws2812_channel_gpio_map[16] = {
     WS2812_CH0_GPIO,
     WS2812_CH1_GPIO,
@@ -131,28 +131,28 @@ static void ws2812_dma_start(GPIO_TypeDef *gpio_bank)
     hdma_tim2_pwm_ch2.Init.Priority = DMA_PRIORITY_VERY_HIGH;
 
     /* I don't know why, but making all DMAs run as long as the buffer size makes things more
-     * efficient. Is it the extra full/half-done flags? Only the 2nd DMA needs to run for a given
-     * size ...
-     */
+    * efficient. Is it the extra full/half-done flags? Only the 2nd DMA needs to run for a given
+    * size ...
+    */
     HAL_DMA_Init(&hdma_tim2_update);
     HAL_DMA_Init(&hdma_tim2_pwm_ch1);
     HAL_DMA_Init(&hdma_tim2_pwm_ch2);
 
     HAL_DMA_Start(&hdma_tim2_update, (uint32_t)&ws2812_gpio_set_bits, (uint32_t)&gpio_bank->BSRR, DMA_BUFFER_SIZE);
-	HAL_DMA_Start(&hdma_tim2_pwm_ch1, (uint32_t)dma_buffer, (uint32_t) &gpio_bank->BRR, DMA_BUFFER_SIZE);
+    HAL_DMA_Start(&hdma_tim2_pwm_ch1, (uint32_t)dma_buffer, (uint32_t) &gpio_bank->BRR, DMA_BUFFER_SIZE);
     HAL_DMA_Start(&hdma_tim2_pwm_ch2, (uint32_t)&ws2812_gpio_set_bits, (uint32_t)&gpio_bank->BRR, DMA_BUFFER_SIZE);
 
-	__HAL_TIM_ENABLE_DMA(&htimer2, TIM_DMA_UPDATE);
-	__HAL_TIM_ENABLE_DMA(&htimer2, TIM_DMA_CC1);
-	__HAL_TIM_ENABLE_DMA(&htimer2, TIM_DMA_CC2);
+    __HAL_TIM_ENABLE_DMA(&htimer2, TIM_DMA_UPDATE);
+    __HAL_TIM_ENABLE_DMA(&htimer2, TIM_DMA_CC1);
+    __HAL_TIM_ENABLE_DMA(&htimer2, TIM_DMA_CC2);
 }
 
 
 /*
- * Unpack the bits of ch_val and pack them into the bit positions of cur0-cur7 that correspond to
- * the given GPIO number. Later, cur0-cur7 will be DMAed directly to a register within our GPIO
- * bank.
- */
+* Unpack the bits of ch_val and pack them into the bit positions of cur0-cur7 that correspond to
+* the given GPIO number. Later, cur0-cur7 will be DMAed directly to a register within our GPIO
+* bank.
+*/
 #define UNPACK_CHANNEL(gpio_num)                    \
     asm volatile (                                  \
     "ubfx   r0, %[ch_val], #7, #1 \n"               \
@@ -192,11 +192,11 @@ static void ws2812_dma_start(GPIO_TypeDef *gpio_bank)
 
 
 /*
- * Unpack the bits for one byte of one channel, and pack them into the bit positions of
- * the cur0 - cur7 variables, corresponding to the GPIO number for that channel.
- * The 'if' statement will be optimized away by the compiler, depending on how many channels
- * are actually defined.
- */
+* Unpack the bits for one byte of one channel, and pack them into the bit positions of
+* the cur0 - cur7 variables, corresponding to the GPIO number for that channel.
+* The 'if' statement will be optimized away by the compiler, depending on how many channels
+* are actually defined.
+*/
 #define HANDLE_CHANNEL(ch_num, gpio_num)                    \
     if (ch_num < WS2812_NUM_CHANNELS) {                     \
         ch_val = get_channel_byte(channels + ch_num, pos);  \
@@ -206,8 +206,8 @@ static void ws2812_dma_start(GPIO_TypeDef *gpio_bank)
 static inline uint8_t get_channel_byte(const struct led_channel_info *channel, int pos)
 {
     /* If all channels are the same length, we can skip the 'pos' range check, and speed up our
-     * inner loop *substantially*
-     */
+    * inner loop *substantially*
+    */
 
     if (WS212_ALL_CHANNELS_SAME_LENGTH || (pos < channel->length))
         return channel->framebuffer[pos] ^ 0xff;
@@ -220,31 +220,31 @@ static void fill_dma_buffer(uint16_t *dest, int pos, const struct led_channel_in
     register uint16_t cur0 = 0, cur1 = 0, cur2 = 0, cur3 = 0, cur4 = 0, cur5 = 0, cur6 = 0, cur7 = 0;
 
     /* cur0 - cur7 represent eight successive words to be output to the DMA buffer. Each value
-     * holds all the nth bits from across each channel. That is, when the unpacking is done,
-     * cur0 holds all the bit0 of the current byte from every channel
-     * cur1 holds all the bit1 of the current byte from every channel
-     * cur2 holds all the bit2 of the current byte from every channel
-     * etc
-     * (in reality they're bit7 through bit0, depending on which direction you're looking)
-     *
-     * This allows us to be very very efficient in terms of the unpacking operation.
-     * Processing each channel requires a load of the next byte from that channel (plus some
-     * range checking), and each bit from this byte gets stuffed into the corresponding position
-     * in eight different variables. We do our best to keep these variables in registers, which
-     * GCC refuses to do, unless we force its hand with some inline ASM.
-     * Finally, when we are done, we have to store the eight outputs to the DMA buffer itself.
-     * That's a total of 16 + 8 memory operations, and no conditional instructions on the data
-     * transfer path (again, excluding the range check at the start of each unpack).
-     *
-     * We cannot turn the below code into a loop, because UNPACK_CHANNEL generates inline ASM which
-     * directly uses the channel number as a literal (translating it into an output bit position).
-     * There is no bit-manipulation instruction that will do this operation in a single step, and
-     * still allow the destination bit position to be a register argument. Yes, we could use an LSL
-     * instruction on an intermediate value, but this will increase our overhead by 33%, and with
-     * all the error checks, we don't have the headroom (at least, on an STM32F103 at 72MHz).
-     *
-     * If you want it to be fast, don't expect it to always be pretty.
-     */
+    * holds all the nth bits from across each channel. That is, when the unpacking is done,
+    * cur0 holds all the bit0 of the current byte from every channel
+    * cur1 holds all the bit1 of the current byte from every channel
+    * cur2 holds all the bit2 of the current byte from every channel
+    * etc
+    * (in reality they're bit7 through bit0, depending on which direction you're looking)
+    *
+    * This allows us to be very very efficient in terms of the unpacking operation.
+    * Processing each channel requires a load of the next byte from that channel (plus some
+    * range checking), and each bit from this byte gets stuffed into the corresponding position
+    * in eight different variables. We do our best to keep these variables in registers, which
+    * GCC refuses to do, unless we force its hand with some inline ASM.
+    * Finally, when we are done, we have to store the eight outputs to the DMA buffer itself.
+    * That's a total of 16 + 8 memory operations, and no conditional instructions on the data
+    * transfer path (again, excluding the range check at the start of each unpack).
+    *
+    * We cannot turn the below code into a loop, because UNPACK_CHANNEL generates inline ASM which
+    * directly uses the channel number as a literal (translating it into an output bit position).
+    * There is no bit-manipulation instruction that will do this operation in a single step, and
+    * still allow the destination bit position to be a register argument. Yes, we could use an LSL
+    * instruction on an intermediate value, but this will increase our overhead by 33%, and with
+    * all the error checks, we don't have the headroom (at least, on an STM32F103 at 72MHz).
+    *
+    * If you want it to be fast, don't expect it to always be pretty.
+    */
     uint8_t ch_val;
     HANDLE_CHANNEL( 0, WS2812_CH0_GPIO);
     HANDLE_CHANNEL( 1, WS2812_CH1_GPIO);
@@ -264,9 +264,9 @@ static void fill_dma_buffer(uint16_t *dest, int pos, const struct led_channel_in
     HANDLE_CHANNEL(15, WS2812_CH15_GPIO);
 
     /*
-     * Store the repacked bits in our DMA buffer, ready to be sent to the GPIO bit-reset register.
-     * cur0-cur7 represents bits0 - bits7 of all our channels. Each bit within curX is one channel.
-     */
+    * Store the repacked bits in our DMA buffer, ready to be sent to the GPIO bit-reset register.
+    * cur0-cur7 represents bits0 - bits7 of all our channels. Each bit within curX is one channel.
+    */
     dest[0] = cur0;
     dest[1] = cur1;
     dest[2] = cur2;
@@ -285,22 +285,22 @@ void ws2812_refresh(const struct led_channel_info *channels, GPIO_TypeDef *gpio_
     int max_length = 0;
 
     /* This is what gets DMAed to the GPIO BSR / BSRR at the start/end of each bit cycle.
-     * We will dynamically build this shortly
-     */
+    * We will dynamically build this shortly
+    */
     ws2812_gpio_set_bits = 0;
 
     /* Pre-fill the DMA buffer, because we won't start filling things on-the-fly until the first
-     * half has already been transferred.
-     */
+    * half has already been transferred.
+    */
     for (i = 0; i < DMA_BUFFER_SIZE; i+= 8) {
         fill_dma_buffer(dma_buffer + i, pos, channels);
         pos++;
     }
 
     /* Go through the channel list, figure out which channels are used, and set up the GPIO set/
-     * reset bit masks. While we're at it, find the length of the longest framebuffer, in case
-     * they're of unequal length. This determines how many total bits we will clock out.
-     */
+    * reset bit masks. While we're at it, find the length of the longest framebuffer, in case
+    * they're of unequal length. This determines how many total bits we will clock out.
+    */
     for (i = 0; i < WS2812_NUM_CHANNELS; i++) {
         if (channels[i].length > max_length)
             max_length = channels[i].length;
@@ -313,18 +313,18 @@ void ws2812_refresh(const struct led_channel_info *channels, GPIO_TypeDef *gpio_
     max_length += DMA_BUFFER_SIZE / 8;
 
     /* If per-channel range checks are enabled, add an extra "dummy" pixel to the end of our data stream.
-     * This must only be done with range checks enabled, or we'll walk off the end of our framebuffers.
-     */
+    * This must only be done with range checks enabled, or we'll walk off the end of our framebuffers.
+    */
 #if !WS212_ALL_CHANNELS_SAME_LENGTH
     max_length += 3;
 #endif
 
     /* We're going to use our standard timer to generate the RESET pulse, so for now just run the
-     * timer without any DMA.
-     */
-	__HAL_TIM_DISABLE_DMA(&htimer2, TIM_DMA_UPDATE);
-	__HAL_TIM_DISABLE_DMA(&htimer2, TIM_DMA_CC1);
-	__HAL_TIM_DISABLE_DMA(&htimer2, TIM_DMA_CC2);
+    * timer without any DMA.
+    */
+    __HAL_TIM_DISABLE_DMA(&htimer2, TIM_DMA_UPDATE);
+    __HAL_TIM_DISABLE_DMA(&htimer2, TIM_DMA_CC1);
+    __HAL_TIM_DISABLE_DMA(&htimer2, TIM_DMA_CC2);
 
     __HAL_TIM_DISABLE(&htimer2);
 
@@ -334,9 +334,9 @@ void ws2812_refresh(const struct led_channel_info *channels, GPIO_TypeDef *gpio_
     __HAL_TIM_ENABLE(&htimer2);
 
     /* We know the timer overflows every 1.25uS (our bit-time interval). So rather than
-     * reprogram the timer for 280uS (reset pulse duration) and back, we're gonna be lazy
-     * and just count out ~225 update intervals
-     */
+    * reprogram the timer for 280uS (reset pulse duration) and back, we're gonna be lazy
+    * and just count out ~225 update intervals
+    */
     for (i = 0; i < 225; i++) {
         while (!__HAL_TIM_GET_FLAG(&htimer2, TIM_FLAG_UPDATE));
         __HAL_TIM_CLEAR_FLAG(&htimer2, TIM_FLAG_UPDATE);
@@ -347,9 +347,9 @@ void ws2812_refresh(const struct led_channel_info *channels, GPIO_TypeDef *gpio_
     ws2812_dma_start(gpio_bank);
 
     /* We set the timer to juuust before the overflow condition, so that the UPDATE event happens
-     * before the CH1 / CH2 match events. We want this so that the UPDATE event gives us a clean
-     * starting "high" level for the first edge of the first bit.
-     */
+    * before the CH1 / CH2 match events. We want this so that the UPDATE event gives us a clean
+    * starting "high" level for the first edge of the first bit.
+    */
     __HAL_TIM_SET_COUNTER(&htimer2, __HAL_TIM_GET_AUTORELOAD(&htimer2) - 10);
 
     /* Clear the DMA transfer status flags for the DMA we're using */
@@ -375,8 +375,8 @@ void ws2812_refresh(const struct led_channel_info *channels, GPIO_TypeDef *gpio_
         DMA1->IFCR = (DMA_IFCR_CTCIF5 | DMA_IFCR_CHTIF5);
 
         /* Unpack one new byte from each channel, into eight words in our DMA buffer
-         * Each 16-bit word in the DMA buffer contains to one bit of the output byte (from each channel)
-         */
+        * Each 16-bit word in the DMA buffer contains to one bit of the output byte (from each channel)
+        */
         for (i = 0; i < DMA_BUFFER_FILL_SIZE; i+= 8) {
             fill_dma_buffer(dest + i, pos, channels);
             pos++;
@@ -391,9 +391,9 @@ void ws2812_refresh(const struct led_channel_info *channels, GPIO_TypeDef *gpio_
     /* Set all LED GPIOs back to 0 */
     gpio_bank->BRR = ws2812_gpio_set_bits;
 
-	__HAL_DMA_DISABLE(&hdma_tim2_update);
-	__HAL_DMA_DISABLE(&hdma_tim2_pwm_ch1);
-	__HAL_DMA_DISABLE(&hdma_tim2_pwm_ch2);
+    __HAL_DMA_DISABLE(&hdma_tim2_update);
+    __HAL_DMA_DISABLE(&hdma_tim2_pwm_ch1);
+    __HAL_DMA_DISABLE(&hdma_tim2_pwm_ch2);
 }
 
 void ws2812_init()
@@ -403,3 +403,4 @@ void ws2812_init()
 
     ws2812_timer2_init();
 }
+#endif

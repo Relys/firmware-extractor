@@ -3,10 +3,6 @@
 
 #if ONEWHEEL_TYPE == PINT || ONEWHEEL_TYPE == XR
 #include "stm32f1xx_hal.h"
-#elif ONEWHEEL_TYPE == GT
-#include "stm32f4xx_hal.h"
-#endif
-
 void GPIO_PortB_Output_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -26,9 +22,9 @@ void GPIO_PortB_Output_Init(void)
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
 
   /*Configure GPIO pins : PB0 PB1 PB2 PB10 
-                           PB11 PB12 PB13 PB14 
-                           PB15 PB3 PB4 PB5 
-                           PB6 PB7 PB8 PB9 */
+                          PB11 PB12 PB13 PB14 
+                          PB15 PB3 PB4 PB5 
+                          PB6 PB7 PB8 PB9 */
   GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_10 
                           |GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14 
                           |GPIO_PIN_15|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5 
@@ -45,3 +41,4 @@ void GPIO_PortB_Output_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 }
+#endif

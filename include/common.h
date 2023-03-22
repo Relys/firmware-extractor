@@ -1,13 +1,18 @@
 #pragma once
-#include <stdint.h>
-#include <stdbool.h>
-
-#define GT_USART3_SR 0x40004800
-#define GT_USART3_DR 0x40004804
 
 #define XR 1
 #define PINT 2
 #define GT 3
+
+#include <stdint.h>
+#include <stdbool.h>
+
+#if ONEWHEEL_TYPE == PINT
+#include "ws2812_led.h"
+#endif
+
+#define GT_USART3_SR 0x40004800
+#define GT_USART3_DR 0x40004804
 
 #define BLE_FRAME_SIZE 20
 

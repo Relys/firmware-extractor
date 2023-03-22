@@ -10,8 +10,8 @@ HardwareSerial OWSerial(USART3);
 #endif
 
 #if ONEWHEEL_TYPE == PINT
-extern "C" {
 #include "ws2812_led.h"
+extern "C" {
 void GPIO_PortB_Output_Init();
 }
 
@@ -140,9 +140,7 @@ void ble_send_serial_number() {
 
 #elif ONEWHEEL_TYPE == GT
 void setup_bluetooth() {
-  // OWSerial.begin(115200);
   delay(50);
-
   ble_send_serial_number();
 }
 
