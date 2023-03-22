@@ -50,6 +50,13 @@ jobs:
         pio run -e pint
         python3 pad.py .pio/build/pint/firmware.bin
         openssl enc -aes-128-ecb -nosalt -nopad -K $ENCRYPTION_KEY -in .pio/build/pint/firmware.bin -out pint-signed-extractor.bin
+     - name: Build Pint firmware
+      run: |
+        pwd
+        ls -l
+        pio run -e gt
+        python3 pad.py .pio/build/gt/firmware.bin
+        openssl enc -aes-128-ctr -nopad -K $GT_ENCRYPTION_KEY -iv $GT_INITIALIZATION_VECTOR -in .pio/build/gt/firmware.bin -out gt-signed-extractor.bin
     - name: Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
@@ -57,3 +64,4 @@ jobs:
         files: |
           xr-signed-extractor.bin
           pint-signed-extractor.bin
+          gt-signed-extractor.bin

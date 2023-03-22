@@ -47,20 +47,21 @@ struct led_channel_info channels[1];
 
 // Tells the Onewheel to reboot into OTA mode on the next boot
 #if ONEWHEEL_TYPE != GT
+#define ble_send OWSerial.print
+#define FRAME_DELAY 250
+
 void mark_ota_reboot() {
   HAL_FLASH_Unlock();
   __HAL_FLASH_CLEAR_FLAG(0x35);
   HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, OTA_FLAG_ADDRESS, 0x80a0);
 }
-#define ble_send OWSerial.print
-#define FRAME_DELAY 250
 #else
+// GT version
 #define FRAME_DELAY 50
-#else
+
 void mark_ota_reboot() {
   HAL_FLASH_Unlock();
   __HAL_FLASH_CLEAR_FLAG(0x35);
-  // update ota flash address
   
   uint16_t *last_storage_address;
   find_storage_end(&last_storage_address);
@@ -68,10 +69,6 @@ void mark_ota_reboot() {
   // Append to the end of the storage and write that we're in OTA mode
   HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, (uint32_t)last_storage_address, 0x80a0);
   HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, (uint32_t)last_storage_address + 2, StorageKeys::BootMode);
-
-//   uint16_t *ota_flag_address;
-//   storage_search(StorageKeys::BootMode, &ota_flag_address);
-//   HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, (uint32_t)ota_flag_address, 0xffff);
 }
 #endif
 

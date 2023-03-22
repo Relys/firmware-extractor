@@ -7,8 +7,6 @@
 #define PINT 2
 #define GT 3
 
-#define ONEWHEEL_TYPE GT
-
 #define BLE_FRAME_SIZE 20
 
 #define LEGACY_OTA_FLAG_ADDRESS            0x0800F800
