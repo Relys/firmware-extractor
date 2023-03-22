@@ -56,7 +56,7 @@ void mark_ota_reboot() {
 }
 #else
 // GT version
-#define FRAME_DELAY 50
+#define FRAME_DELAY 100
 
 void mark_ota_reboot() {
   HAL_FLASH_Unlock();
