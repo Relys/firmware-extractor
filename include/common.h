@@ -1,4 +1,6 @@
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
 
 #define GT_USART3_SR 0x40004800
 #define GT_USART3_DR 0x40004804

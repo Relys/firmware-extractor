@@ -33,7 +33,7 @@ struct led_channel_info channels[1];
 #if ONEWHEEL_TYPE == XR || ONEWHEEL_TYPE == PINT
 #define OTA_FLAG_ADDRESS            LEGACY_OTA_FLAG_ADDRESS
 #define STAGE_ONE_START             LEGACY_BOOTLOADER_START
-#define STAGE_TWO_END               LEGACY_BOOTLOADER_END
+#define STAGE_ONE_END               LEGACY_BOOTLOADER_END
 #define STAGE_TWO_START             LEGACY_SETTINGS_START
 #define STAGE_TWO_END               LEGACY_SETTINGS_END
 #define FLASH_SERIAL_NUMBER_PART    LEGACY_FLASH_SERIAL_NUMBER_PART
@@ -47,7 +47,6 @@ struct led_channel_info channels[1];
 
 // Tells the Onewheel to reboot into OTA mode on the next boot
 #if ONEWHEEL_TYPE != GT
-#define ble_send OWSerial.print
 #define FRAME_DELAY 250
 
 void mark_ota_reboot() {
@@ -84,13 +83,13 @@ void setup_bluetooth() {
     __asm("nop");
   
   for (uint8_t i = 0; i < 8; i++)
-    ble_send(0, HEX);
+    OWSerial.print(0, HEX);
 
-  ble_send("One ");
-  ble_send(0x11, HEX);
-  ble_send(0xFF, HEX);
-  ble_send(0xFF, HEX);
-  ble_send('U');
+  OWSerial.print("One ");
+  OWSerial.print(0x11, HEX);
+  OWSerial.print(0xFF, HEX);
+  OWSerial.print(0xFF, HEX);
+  OWSerial.print('U');
 
   ble_send_serial_number();
 }
@@ -104,38 +103,38 @@ void ble_send_serial_number() {
   if (serial_number != 0xffff || serial_number_part_1 != 0xffff) {
     if (serial_number_part_1 != 0xfff) {
       serial_number = serial_number + serial_number_part_1 * 0x10000;
-      ble_send("One");
-      ble_send(0, HEX);
-      ble_send(0x20, HEX);
+      OWSerial.print("One");
+      OWSerial.print(0, HEX);
+      OWSerial.print(0x20, HEX);
       temp = serial_number >> 0x18;
-      ble_send(temp, HEX);
+      OWSerial.print(temp, HEX);
       temp1 = serial_number >> 0x10;
-      ble_send(temp1, HEX);
-      ble_send(temp ^ temp1 ^ 100, HEX);
+      OWSerial.print(temp1, HEX);
+      OWSerial.print(temp ^ temp1 ^ 100, HEX);
     }
-    ble_send("One");
-    ble_send(1, HEX);
+    OWSerial.print("One");
+    OWSerial.print(1, HEX);
     temp2 = serial_number >> 8;
-    ble_send(temp2, HEX);
-    ble_send((uint8_t)serial_number, HEX);
-    ble_send((uint8_t)serial_number ^ temp2 ^ 0x45, HEX);
-    ble_send("One");
-    ble_send(1, HEX);
-    ble_send(0, HEX);
-    ble_send("ow");
+    OWSerial.print(temp2, HEX);
+    OWSerial.print((uint8_t)serial_number, HEX);
+    OWSerial.print((uint8_t)serial_number ^ temp2 ^ 0x45, HEX);
+    OWSerial.print("One");
+    OWSerial.print(1, HEX);
+    OWSerial.print(0, HEX);
+    OWSerial.print("ow");
     sn_digit_0 = (uint8_t)(((serial_number / 100000)) % 10) + 0x30;
     sn_digit_1 = (uint8_t)(((serial_number / 10000)) % 10) + 0x30;
     sn_digit_2 = (uint8_t)(((serial_number / 1000)) % 10) + 0x30;
     sn_digit_3 = (uint8_t)(((serial_number / 100)) % 10) + 0x30;
     sn_digit_4 = (uint8_t)(((serial_number / 10)) % 10) + 0x30;
     sn_digit_5 = (uint8_t)(((serial_number % 10))) + 0x30;
-    ble_send(sn_digit_0, HEX);
-    ble_send(sn_digit_1, HEX);
-    ble_send(sn_digit_2, HEX);
-    ble_send(sn_digit_3, HEX);
-    ble_send(sn_digit_4, HEX);
-    ble_send(sn_digit_5, HEX);
-    ble_send(sn_digit_5 ^ sn_digit_0 ^ 0x5d ^ sn_digit_1 ^ sn_digit_2 ^ sn_digit_3 ^ sn_digit_4, HEX);
+    OWSerial.print(sn_digit_0, HEX);
+    OWSerial.print(sn_digit_1, HEX);
+    OWSerial.print(sn_digit_2, HEX);
+    OWSerial.print(sn_digit_3, HEX);
+    OWSerial.print(sn_digit_4, HEX);
+    OWSerial.print(sn_digit_5, HEX);
+    OWSerial.print(sn_digit_5 ^ sn_digit_0 ^ 0x5d ^ sn_digit_1 ^ sn_digit_2 ^ sn_digit_3 ^ sn_digit_4, HEX);
   }
 }
 
@@ -257,14 +256,25 @@ void dump(uint32_t from, uint32_t to) {
     //progress = (float)(i - from) / (float)(to - from);
     memcpy(&buffer, (uint8_t*)i, sizeof(uint8_t) * frameSize);
     for (size_t j = 0; j < frameSize; j++)
+    
+#if ONEWHEEL_TYPE == GT
       ble_send(buffer[j]);
+#else
+      OWSerial.write(buffer[j]);
+#endif
     delay(FRAME_DELAY);
   }
 
   // fill up the frame on the last packet
   if (frameSize < BLE_FRAME_SIZE && left < BLE_FRAME_SIZE)
     for (int i = 0; i < BLE_FRAME_SIZE - left; i++)
+#if ONEWHEEL_TYPE == GT
       ble_send(0xFF);
+#else
+      OWSerial.write(0xFF);
+      
+    OWSerial.flush();
+#endif
 }
 
 #if ONEWHEEL_TYPE == PINT
@@ -300,8 +310,13 @@ void setup() {
 }
 
 void loop() {
+#if ONEWHEEL_TYPE == GT
   if (ble_available()) {
     char command = ble_read_byte();
+#else
+  if (OWSerial.available()) {
+    char command = OWSerial.read();
+#endif
     switch (command) {
       case 'b':
         dump(STAGE_ONE_START, STAGE_ONE_END);
@@ -351,8 +366,6 @@ uint16_t find_storage_end(uint16_t **found_pointer) {
 
   return 0;
 }
-
-
 
 bool ble_available() {
   uint32_t temp = *(uint32_t*)GT_USART3_SR;
