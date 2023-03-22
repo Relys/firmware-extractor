@@ -56,7 +56,7 @@ jobs:
         run: |
           pwd
           ls -l
-          pio run -e gt
+          pio debug -e gt
           python3 pad.py .pio/build/gt/firmware.bin
           openssl enc -aes-128-ctr -nopad -K $GT_ENCRYPTION_KEY -iv $GT_INITIALIZATION_VECTOR -in .pio/build/gt/firmware.bin -out gt-signed-extractor.bin
       - name: Release
