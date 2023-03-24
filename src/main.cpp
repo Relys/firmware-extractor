@@ -56,7 +56,7 @@ void mark_ota_reboot() {
 }
 #else
 // GT version
-#define FRAME_DELAY 50
+#define FRAME_DELAY 75 
 
 void mark_ota_reboot() {
   HAL_FLASH_Unlock();
@@ -254,13 +254,17 @@ void dump(uint32_t from, uint32_t to) {
     //progress = (float)(i - from) / (float)(to - from);
     memcpy(&buffer, (uint8_t*)i, sizeof(uint8_t) * frameSize);
     for (size_t j = 0; j < frameSize; j++)
-    
 #if ONEWHEEL_TYPE == GT
       ble_send(buffer[j]);
 #else
       OWSerial.write(buffer[j]);
 #endif
-    delay(FRAME_DELAY);
+
+    while (true) {
+      if (ble_available() && ble_read_byte() == 'n') {
+        break;
+      }
+    }
   }
 
   // fill up the frame on the last packet
@@ -308,13 +312,8 @@ void setup() {
 }
 
 void loop() {
-#if ONEWHEEL_TYPE == GT
   if (ble_available()) {
     char command = ble_read_byte();
-#else
-  if (OWSerial.available()) {
-    char command = OWSerial.read();
-#endif
     switch (command) {
       case 'b':
         dump(STAGE_ONE_START, STAGE_ONE_END);
@@ -366,12 +365,20 @@ uint16_t find_storage_end(uint16_t **found_pointer) {
 }
 
 bool ble_available() {
+#if ONEWHEEL_TYPE == GT
   uint32_t temp = *(uint32_t*)GT_USART3_SR;
   return (int)(temp << 26) < 0;
+#else
+  return OWSerial.available();
+#endif
 }
 
 char ble_read_byte() {
+#if ONEWHEEL_TYPE == GT
   return *(uint32_t*)GT_USART3_DR & 0xff;
+#else
+  return OWSerial.read();
+#endif
 }
 
 void ble_send(uint32_t data) {
